@@ -44,6 +44,9 @@ class Production(Base):
     payment_status: Mapped[str] = mapped_column(String, default="pending")  # pending, paid, overdue
     due_date: Mapped[DateTime] = mapped_column(DateTime, nullable=True)  # Payment due date
 
+    # Notes field for additional information
+    notes: Mapped[str] = mapped_column(String, nullable=True)  # Additional notes about the production
+
     # Relationships with eager loading
     organization = relationship("Organization", back_populates="productions")
     client = relationship("Client", back_populates="productions")

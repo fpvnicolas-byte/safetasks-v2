@@ -20,6 +20,7 @@ class ProductionCreate(BaseModel):
     filming_dates: Optional[str] = None
     payment_method: Optional[str] = None
     due_date: Optional[datetime] = None
+    notes: Optional[str] = None
 
     @field_validator('deadline', 'due_date', mode='before')
     @classmethod
@@ -43,6 +44,7 @@ class ProductionUpdate(BaseModel):
     payment_method: Optional[str] = None
     payment_status: Optional[str] = None
     due_date: Optional[datetime] = None
+    notes: Optional[str] = None
 
     @field_validator('deadline', 'due_date', mode='before')
     @classmethod
@@ -60,6 +62,7 @@ class ProductionResponse(BaseModel):
     deadline: Optional[datetime] = None
     locations: Optional[str] = None
     filming_dates: Optional[str] = None
+    notes: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

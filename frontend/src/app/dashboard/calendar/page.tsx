@@ -5,18 +5,35 @@ import { ChevronLeft, ChevronRight, Calendar, Film, DollarSign, Flag } from 'luc
 import { productionsApi } from '@/lib/api';
 import { useSWRConfig } from 'swr';
 import useSWR from 'swr';
+import ProductionQuickView from '@/components/calendar/ProductionQuickView';
 
-// Simple interface for calendar display
+// Full interface matching ProductionQuickView
 interface Production {
   id: number;
   title: string;
   filming_dates: string | null;
   deadline: string | null;
   due_date: string | null;
+  locations: string | null;
+  payment_method: string | null;
+  payment_status: string;
+  total_value: number;
+  notes: string | null;
+  crew: Array<{
+    id: number;
+    user_id: number;
+    full_name: string | null;
+    role: string;
+    fee: number | null;
+  }>;
 }
 
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedProduction, setSelectedProduction] = useState<Production | null>(null);
+  const [selectedEventType, setSelectedEventType] = useState<'filming' | 'payment' | 'deadline' | null>(null);
+  const [selectedEventDate, setSelectedEventDate] = useState<string | null>(null);
+  const [quickViewOpen, setQuickViewOpen] = useState(false);
 
   const { data: productions = [], error, isLoading } = useSWR('/api/v1/productions', productionsApi.getProductions);
 
@@ -74,6 +91,69 @@ export default function CalendarPage() {
 
       return false;
     });
+  };
+
+  const getDetailedEventsForDay = (date: Date) => {
+    const events: Array<{
+      production: Production;
+      type: 'filming' | 'payment' | 'deadline';
+      date: string;
+    }> = [];
+
+    productions.forEach((production: Production) => {
+      const dateStr = date.toISOString().split('T')[0];
+
+      // Check filming dates
+      if (production.filming_dates) {
+        const filmingDates = production.filming_dates.split(',').map((d: string) => d.trim());
+        if (filmingDates.some((filmingDate: string) => filmingDate === dateStr)) {
+          events.push({
+            production,
+            type: 'filming',
+            date: dateStr
+          });
+        }
+      }
+
+      // Check deadlines
+      if (production.deadline) {
+        const deadlineDate = new Date(production.deadline).toISOString().split('T')[0];
+        if (deadlineDate === dateStr) {
+          events.push({
+            production,
+            type: 'deadline',
+            date: dateStr
+          });
+        }
+      }
+
+      // Check due dates
+      if (production.due_date) {
+        const dueDate = new Date(production.due_date).toISOString().split('T')[0];
+        if (dueDate === dateStr) {
+          events.push({
+            production,
+            type: 'payment',
+            date: dateStr
+          });
+        }
+      }
+    });
+
+    return events;
+  };
+
+  const handleEventClick = (production: Production, eventType: 'filming' | 'payment' | 'deadline', eventDate: string) => {
+    setSelectedProduction(production);
+    setSelectedEventType(eventType);
+    setSelectedEventDate(eventDate);
+    setQuickViewOpen(true);
+  };
+
+  const handleEditComplete = () => {
+    setQuickViewOpen(false);
+    // Navigate to production details - we'll implement this later
+    // For now, just close the modal
   };
 
   const navigateMonth = (direction: 'prev' | 'next') => {
@@ -195,43 +275,28 @@ export default function CalendarPage() {
                       {date.getDate()}
                     </div>
 
-                    <div className="flex-1 space-y-1 overflow-hidden">
-                      {events.slice(0, 3).map((production: Production) => {
-                        const isFilmingDay = production.filming_dates?.split(',').some((d: string) =>
-                          d.trim() === date.toISOString().split('T')[0]
-                        );
-                        const isDeadline = production.deadline &&
-                          new Date(production.deadline).toDateString() === date.toDateString();
-                        const isDueDate = production.due_date &&
-                          new Date(production.due_date).toDateString() === date.toDateString();
-
-                        return (
-                          <div
-                            key={production.id}
-                            className={`
-                              text-xs p-1 rounded cursor-pointer transition-all duration-200
-                              ${isFilmingDay ? 'bg-blue-500/30 text-blue-200 border border-blue-500/50' : ''}
-                              ${isDeadline ? 'bg-red-500/30 text-red-200 border border-red-500/50' : ''}
-                              ${isDueDate ? 'bg-yellow-500/30 text-yellow-200 border border-yellow-500/50' : ''}
-                              hover:opacity-80
-                            `}
-                            title={production.title}
-                          >
-                            <div className="flex items-center gap-1">
-                              {isFilmingDay && <Film className="h-3 w-3" />}
-                              {isDueDate && <DollarSign className="h-3 w-3" />}
-                              {isDeadline && <Flag className="h-3 w-3" />}
-                              <span className="truncate">{production.title}</span>
-                            </div>
+                    <div className="flex-1 max-h-[120px] overflow-y-auto space-y-1">
+                      {getDetailedEventsForDay(date).map((event, eventIndex) => (
+                        <div
+                          key={`${event.production.id}-${event.type}`}
+                          className={`
+                            text-xs p-1 rounded cursor-pointer transition-all duration-200
+                            ${event.type === 'filming' ? 'bg-blue-500/30 text-blue-200 border border-blue-500/50' : ''}
+                            ${event.type === 'deadline' ? 'bg-red-500/30 text-red-200 border border-red-500/50' : ''}
+                            ${event.type === 'payment' ? 'bg-yellow-500/30 text-yellow-200 border border-yellow-500/50' : ''}
+                            hover:opacity-80
+                          `}
+                          title={`${event.production.title} - ${event.type === 'filming' ? 'Filmagem' : event.type === 'payment' ? 'Pagamento' : 'Prazo'}`}
+                          onClick={() => handleEventClick(event.production, event.type, event.date)}
+                        >
+                          <div className="flex items-center gap-1">
+                            {event.type === 'filming' && <Film className="h-3 w-3" />}
+                            {event.type === 'payment' && <DollarSign className="h-3 w-3" />}
+                            {event.type === 'deadline' && <Flag className="h-3 w-3" />}
+                            <span className="truncate">{event.production.title}</span>
                           </div>
-                        );
-                      })}
-
-                      {events.length > 3 && (
-                        <div className="text-xs text-slate-500 px-1">
-                          +{events.length - 3} mais
                         </div>
-                      )}
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -270,6 +335,16 @@ export default function CalendarPage() {
           </div>
         </div>
       </div>
+
+      {/* Production Quick View Modal */}
+      <ProductionQuickView
+        production={selectedProduction}
+        eventType={selectedEventType}
+        eventDate={selectedEventDate}
+        isOpen={quickViewOpen}
+        onClose={() => setQuickViewOpen(false)}
+        onEditComplete={handleEditComplete}
+      />
     </div>
   );
 }
