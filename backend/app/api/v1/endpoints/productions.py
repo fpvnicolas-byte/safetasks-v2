@@ -9,7 +9,7 @@ from app.api.deps import get_current_active_admin, get_current_user
 from app.db.session import get_db
 from app.models.production import Production
 from app.models.production_crew import ProductionCrew
-from app.models.user import User
+from app.models.user import User, Organization
 from app.schemas.production import ProductionCreate, ProductionCrewResponse, ProductionResponse, ProductionUpdate
 
 router = APIRouter()
@@ -23,16 +23,7 @@ async def create_production(
 ) -> ProductionResponse:
     """Create a new production for the current user's organization."""
 
-    # Get organization's default tax rate
-    result = await db.execute(
-        select(User.__table__.c.organization_id).where(User.id == current_user.id)
-    )
-    org_result = await db.execute(
-        select(User.__table__.join(User.organization)).where(User.id == current_user.id)
-    )
-
-    # Get organization for default tax rate
-    from app.models.user import Organization
+    # Get organization for default tax rate using the user's organization_id
     org_result = await db.execute(
         select(Organization).where(Organization.id == current_user.organization_id)
     )
