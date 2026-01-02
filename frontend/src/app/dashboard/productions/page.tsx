@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Edit, Search, Filter, X, Save, Calendar, Trash2, MapPin, CreditCard, DollarSign, TrendingUp, Users, Package, User, FileText } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { productionsApi, servicesApi, usersApi, clientsApi } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -680,7 +681,20 @@ export default function ProductionsPage() {
                     {statusLabels[production.status as ProductionStatus]}
                   </Badge>
                 </div>
-                <Edit className="h-4 w-4 text-slate-400 group-hover:text-slate-300 transition-colors" />
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteProduction(production);
+                    }}
+                    className="h-8 w-8 p-0 text-slate-400 hover:text-red-400/80 opacity-0 group-hover:opacity-100 transition-all duration-200"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                  <Edit className="h-4 w-4 text-slate-400 group-hover:text-slate-300 transition-colors" />
+                </div>
               </div>
 
               <div className="space-y-3">
@@ -1600,6 +1614,32 @@ export default function ProductionsPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Production Confirmation Dialog */}
+      <AlertDialog open={!!productionToDelete} onOpenChange={() => setProductionToDelete(null)}>
+        <AlertDialogContent className="bg-slate-950/95 backdrop-blur-2xl border border-white/10">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-slate-50">
+              Excluir Produção
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-400">
+              Tem certeza de que deseja excluir a produção "{productionToDelete?.title}"?
+              Esta ação não pode ser desfeita e todos os dados relacionados serão removidos permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-slate-600 text-slate-300 hover:bg-slate-800">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteProduction}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Excluir Produção
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

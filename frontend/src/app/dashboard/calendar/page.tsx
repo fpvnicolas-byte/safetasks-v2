@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ChevronLeft, ChevronRight, Calendar, Film, DollarSign, Flag } from 'lucide-react';
 import { productionsApi } from '@/lib/api';
+import { useSWRConfig } from 'swr';
+import useSWR from 'swr';
 
 // Simple interface for calendar display
 interface Production {
@@ -14,24 +16,9 @@ interface Production {
 }
 
 export default function CalendarPage() {
-  const [productions, setProductions] = useState<Production[]>([]);
-  const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
 
-  useEffect(() => {
-    fetchProductions();
-  }, []);
-
-  const fetchProductions = async () => {
-    try {
-      const response = await productionsApi.getProductions();
-      setProductions(response);
-    } catch (err) {
-      console.error("Erro ao carregar produções:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: productions = [], error, isLoading } = useSWR('/api/v1/productions', productionsApi.getProductions);
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
@@ -57,12 +44,12 @@ export default function CalendarPage() {
   };
 
   const getEventsForDay = (date: Date) => {
-    return productions.filter(production => {
+    return productions.filter((production: Production) => {
       // Filming dates
       if (production.filming_dates) {
-        const filmingDates = production.filming_dates.split(',').map(d => d.trim());
+        const filmingDates = production.filming_dates.split(',').map((d: string) => d.trim());
         const dateStr = date.toISOString().split('T')[0];
-        if (filmingDates.some(filmingDate => filmingDate === dateStr)) {
+        if (filmingDates.some((filmingDate: string) => filmingDate === dateStr)) {
           return true;
         }
       }
@@ -105,7 +92,7 @@ export default function CalendarPage() {
     setCurrentDate(new Date());
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
@@ -209,7 +196,7 @@ export default function CalendarPage() {
                     </div>
 
                     <div className="flex-1 space-y-1 overflow-hidden">
-                      {events.slice(0, 3).map((production) => {
+                      {events.slice(0, 3).map((production: Production) => {
                         const isFilmingDay = production.filming_dates?.split(',').some((d: string) =>
                           d.trim() === date.toISOString().split('T')[0]
                         );
