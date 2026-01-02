@@ -11,10 +11,12 @@ import ProductionQuickView from '@/components/calendar/ProductionQuickView';
 interface Production {
   id: number;
   title: string;
-  filming_dates: string | null;
+  shooting_sessions: Array<{
+    date: string;
+    location: string;
+  }> | null;
   deadline: string | null;
   due_date: string | null;
-  locations: string | null;
   payment_method: string | null;
   payment_status: string;
   total_value: number;
@@ -62,11 +64,11 @@ export default function CalendarPage() {
 
   const getEventsForDay = (date: Date) => {
     return productions.filter((production: Production) => {
-      // Filming dates
-      if (production.filming_dates) {
-        const filmingDates = production.filming_dates.split(',').map((d: string) => d.trim());
-        const dateStr = date.toISOString().split('T')[0];
-        if (filmingDates.some((filmingDate: string) => filmingDate === dateStr)) {
+      const dateStr = date.toISOString().split('T')[0];
+
+      // Check shooting sessions
+      if (production.shooting_sessions) {
+        if (production.shooting_sessions.some(session => session.date === dateStr)) {
           return true;
         }
       }
@@ -74,7 +76,6 @@ export default function CalendarPage() {
       // Deadlines
       if (production.deadline) {
         const deadlineDate = new Date(production.deadline).toISOString().split('T')[0];
-        const dateStr = date.toISOString().split('T')[0];
         if (deadlineDate === dateStr) {
           return true;
         }
@@ -83,7 +84,6 @@ export default function CalendarPage() {
       // Due dates
       if (production.due_date) {
         const dueDate = new Date(production.due_date).toISOString().split('T')[0];
-        const dateStr = date.toISOString().split('T')[0];
         if (dueDate === dateStr) {
           return true;
         }
@@ -103,16 +103,17 @@ export default function CalendarPage() {
     productions.forEach((production: Production) => {
       const dateStr = date.toISOString().split('T')[0];
 
-      // Check filming dates
-      if (production.filming_dates) {
-        const filmingDates = production.filming_dates.split(',').map((d: string) => d.trim());
-        if (filmingDates.some((filmingDate: string) => filmingDate === dateStr)) {
-          events.push({
-            production,
-            type: 'filming',
-            date: dateStr
-          });
-        }
+      // Check shooting sessions
+      if (production.shooting_sessions) {
+        production.shooting_sessions.forEach(session => {
+          if (session.date === dateStr) {
+            events.push({
+              production,
+              type: 'filming',
+              date: dateStr
+            });
+          }
+        });
       }
 
       // Check deadlines

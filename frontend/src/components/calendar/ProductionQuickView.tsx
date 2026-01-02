@@ -10,10 +10,12 @@ import { formatCurrency } from '@/lib/utils';
 interface Production {
   id: number;
   title: string;
-  filming_dates: string | null;
+  shooting_sessions: Array<{
+    date: string;
+    location: string;
+  }> | null;
   deadline: string | null;
   due_date: string | null;
-  locations: string | null;
   payment_method: string | null;
   payment_status: string;
   total_value: number;
@@ -88,6 +90,9 @@ export default function ProductionQuickView({
   const renderEventSpecificContent = () => {
     switch (eventType) {
       case 'filming':
+        // Encontrar a sessão específica desta data
+        const currentSession = production.shooting_sessions?.find(session => session.date === eventDate);
+
         return (
           <div className="space-y-4">
             <div className="flex items-center gap-3">
@@ -95,7 +100,7 @@ export default function ProductionQuickView({
               <div>
                 <p className="text-sm font-medium text-slate-300">Local de Filmagem</p>
                 <p className="text-sm text-slate-50">
-                  {production.locations || 'Local não especificado'}
+                  {currentSession?.location || 'Local não especificado'}
                 </p>
               </div>
             </div>

@@ -29,8 +29,7 @@ async def create_production(
         organization_id=current_user.organization_id,
         client_id=production_data.client_id,
         deadline=production_data.deadline,
-        locations=production_data.locations,
-        filming_dates=production_data.filming_dates,
+        shooting_sessions=production_data.shooting_sessions,
         payment_method=production_data.payment_method,
         due_date=production_data.due_date
     )
@@ -109,13 +108,13 @@ async def update_production(
     update_data = production_data.dict(exclude_unset=True)
 
     # Check which fields are in the model vs schema
-    model_fields = ['title', 'client_id', 'status', 'deadline', 'priority', 'locations', 'filming_dates',
+    model_fields = ['title', 'client_id', 'status', 'deadline', 'priority', 'shooting_sessions',
                    'subtotal', 'total_cost', 'total_value', 'discount', 'tax_rate',
                    'payment_method', 'payment_status', 'due_date']
 
     for field, value in update_data.items():
         # Handle empty strings as None for nullable fields
-        if value == "" and field in ['locations', 'filming_dates', 'payment_method']:
+        if value == "" and field in ['shooting_sessions', 'payment_method']:
             value = None
         setattr(production, field, value)
 

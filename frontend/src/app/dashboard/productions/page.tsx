@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Edit, Search, Filter, X, Save, Calendar, Trash2, MapPin, CreditCard, DollarSign, TrendingUp, Users, Package, User, FileText } from 'lucide-react';
+import { Plus, Edit, Search, Filter, Save, Calendar, Trash2, MapPin, CreditCard, DollarSign, TrendingUp, Users, Package, User, FileText, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { productionsApi, servicesApi, usersApi, clientsApi } from '@/lib/api';
@@ -54,8 +54,10 @@ interface Production {
   title: string;
   status: string;
   deadline: string | null;
-  locations: string | null;
-  filming_dates: string | null;
+  shooting_sessions: Array<{
+    date: string;
+    location: string;
+  }> | null;
   priority: string | null;
   payment_method: string | null;
   payment_status: string;
@@ -131,12 +133,23 @@ export default function ProductionsPage() {
   const [clients, setClients] = useState<any[]>([]);
 
   // Estado para edição
-  const [editForm, setEditForm] = useState({
+  const [editForm, setEditForm] = useState<{
+    title: string;
+    status: ProductionStatus;
+    deadline: string;
+    shooting_sessions: Array<{date: string | null, location: string | null}>;
+    payment_method: string;
+    payment_status: string;
+    due_date: string;
+    subtotal: number;
+    total_cost: number;
+    discount: number;
+    tax_rate: number;
+  }>({
     title: '',
     status: 'draft' as ProductionStatus,
     deadline: '',
-    locations: [] as string[],
-    filming_dates: [] as string[],
+    shooting_sessions: [] as Array<{date: string | null, location: string | null}>,
     payment_method: '',
     payment_status: 'pending',
     due_date: '',
@@ -382,46 +395,36 @@ export default function ProductionsPage() {
     }
   };
 
-  // Funções auxiliares para campos dinâmicos
-  const addLocation = () => {
+  // Funções auxiliares para shooting sessions dinâmicas
+  const addShootingSession = () => {
     setEditForm(prev => ({
       ...prev,
-      locations: [...prev.locations, '']
+      shooting_sessions: [...prev.shooting_sessions, { date: null, location: null }]
     }));
   };
 
-  const removeLocation = (index: number) => {
+  const removeShootingSession = (index: number) => {
     setEditForm(prev => ({
       ...prev,
-      locations: prev.locations.filter((_, i) => i !== index)
+      shooting_sessions: prev.shooting_sessions.filter((_, i) => i !== index)
     }));
   };
 
-  const updateLocation = (index: number, value: string) => {
+  const updateShootingSessionDate = (index: number, value: string) => {
     setEditForm(prev => ({
       ...prev,
-      locations: prev.locations.map((loc, i) => i === index ? value : loc)
+      shooting_sessions: prev.shooting_sessions.map((session, i) =>
+        i === index ? { ...session, date: value } : session
+      )
     }));
   };
 
-  const addFilmingDate = () => {
+  const updateShootingSessionLocation = (index: number, value: string) => {
     setEditForm(prev => ({
       ...prev,
-      filming_dates: [...prev.filming_dates, '']
-    }));
-  };
-
-  const removeFilmingDate = (index: number) => {
-    setEditForm(prev => ({
-      ...prev,
-      filming_dates: prev.filming_dates.filter((_, i) => i !== index)
-    }));
-  };
-
-  const updateFilmingDate = (index: number, value: string) => {
-    setEditForm(prev => ({
-      ...prev,
-      filming_dates: prev.filming_dates.map((date, i) => i === index ? value : date)
+      shooting_sessions: prev.shooting_sessions.map((session, i) =>
+        i === index ? { ...session, location: value } : session
+      )
     }));
   };
 
@@ -451,8 +454,10 @@ export default function ProductionsPage() {
       title: production.title,
       status: production.status as ProductionStatus,
       deadline: production.deadline ? new Date(production.deadline).toISOString().split('T')[0] : '',
-      locations: production.locations ? production.locations.split(',').map(loc => loc.trim()) : [],
-      filming_dates: production.filming_dates ? production.filming_dates.split(',').map((date: string) => date.trim()) : [],
+      shooting_sessions: production.shooting_sessions ? production.shooting_sessions.map(session => ({
+        date: session.date ?? null,
+        location: session.location ?? null
+      })) : [],
       payment_method: production.payment_method || '',
       payment_status: production.payment_status || 'pending',
       due_date: production.due_date ? new Date(production.due_date).toISOString().split('T')[0] : '',
@@ -470,18 +475,19 @@ export default function ProductionsPage() {
     if (!selectedProduction) return;
 
     try {
-      // Formatar filming_dates como string separada por vírgulas
-      const filmingDatesFormatted = editForm.filming_dates
-        .filter(date => date.trim() !== "")
-        .map(date => new Date(date).toISOString().split('T')[0]) // Formatar como YYYY-MM-DD
-        .join(', ') || null;
+      // Filtrar shooting sessions válidas (com data ou location)
+      const validShootingSessions = editForm.shooting_sessions
+        .filter(session => (session.date && session.date.trim() !== "") || (session.location && session.location.trim() !== ""))
+        .map(session => ({
+          date: session.date && session.date.trim() ? session.date.trim() : null,
+          location: session.location && session.location.trim() ? session.location.trim() : null
+        }));
 
       const payload = {
         title: editForm.title,
         status: editForm.status,
         deadline: editForm.deadline ? new Date(editForm.deadline).toISOString() : null,
-        locations: editForm.locations.filter(loc => loc.trim()).join(', ') || null,
-        filming_dates: filmingDatesFormatted,
+        shooting_sessions: validShootingSessions.length > 0 ? validShootingSessions : null,
         payment_method: editForm.payment_method,
         payment_status: editForm.payment_status,
         due_date: editForm.due_date ? new Date(editForm.due_date).toISOString() : null,
@@ -703,12 +709,7 @@ export default function ProductionsPage() {
                   {production.deadline ? new Date(production.deadline).toLocaleDateString('pt-BR') : '--'}
                 </div>
 
-                {production.locations && (
-                  <div className="flex items-center text-sm text-slate-400">
-                    <MapPin className="h-4 w-4 mr-2" />
-                    {production.locations}
-                  </div>
-                )}
+
 
                 <div className="flex items-center text-sm text-slate-400">
                   <CreditCard className="h-4 w-4 mr-2" />
@@ -745,13 +746,13 @@ export default function ProductionsPage() {
 
       {/* Edit Sheet */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent className="w-full sm:max-w-2xl bg-slate-950/95 backdrop-blur-2xl border-l border-white/10">
-          <SheetHeader className="border-b border-white/10 pb-4">
-            <div className="flex items-center justify-between w-full">
+        <SheetContent className="w-full sm:max-w-2xl bg-slate-950/95 backdrop-blur-2xl border-l border-white/10 [&>button]:hidden">
+          <SheetHeader className="border-b border-white/10 pb-4 relative">
+            <div className="flex items-center justify-between w-full pr-12">
               <SheetTitle className="text-slate-50">
                 {selectedProduction?.title}
               </SheetTitle>
-              <div className="flex items-center gap-4 ml-auto">
+              <div className="flex items-center gap-4">
                 <Button
                   onClick={handleSave}
                   className="bg-emerald-600 hover:bg-emerald-700"
@@ -767,15 +768,15 @@ export default function ProductionsPage() {
                 >
                   Cancelar
                 </Button>
-                <Button
-                  variant="ghost"
-                  onClick={() => setSheetOpen(false)}
-                  className="text-slate-400 hover:text-slate-300"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
               </div>
             </div>
+            <Button
+              variant="ghost"
+              onClick={() => setSheetOpen(false)}
+              className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary text-slate-400 hover:text-slate-300"
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </SheetHeader>
 
           {selectedProduction && (
@@ -865,111 +866,98 @@ export default function ProductionsPage() {
                       )}
                     </div>
 
-                    {/* Locations - Campos Dinâmicos */}
+                    {/* Shooting Sessions - Campos Dinâmicos */}
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <label className="block text-sm font-medium text-slate-300">
-                          Locais de Filmagem
+                          Diárias de Filmagem
                         </label>
                         {isEditing && (
                           <Button
                             type="button"
-                            onClick={addLocation}
+                            onClick={addShootingSession}
                             variant="ghost"
                             size="sm"
                             className="text-slate-400 hover:text-slate-300"
                           >
                             <Plus className="h-4 w-4 mr-1" />
-                            Adicionar
+                            Adicionar Diária
                           </Button>
                         )}
                       </div>
                       {isEditing ? (
-                        <div className="space-y-2">
-                          {editForm.locations.map((location, index) => (
-                            <div key={index} className="flex gap-2">
-                              <Input
-                                value={location}
-                                onChange={(e) => updateLocation(index, e.target.value)}
-                                placeholder={`Local ${index + 1}`}
-                                className="bg-slate-900/50 border-slate-700 flex-1"
-                              />
-                              <Button
-                                type="button"
-                                onClick={() => removeLocation(index)}
-                                variant="ghost"
-                                size="sm"
-                                className="text-red-400 hover:text-red-300"
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
+                        <div className="space-y-3">
+                          {editForm.shooting_sessions.map((session, index) => (
+                            <div key={index} className="bg-slate-800/50 rounded-lg p-3 space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium text-slate-300">
+                                  Diária {index + 1}
+                                </span>
+                                <Button
+                                  type="button"
+                                  onClick={() => removeShootingSession(index)}
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-red-400 hover:text-red-300 h-6 w-6 p-0"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <label className="block text-xs text-slate-400 mb-1">Data</label>
+                                  <Input
+                                    type="date"
+                                    value={session.date ?? ""}
+                                    onChange={(e) => updateShootingSessionDate(index, e.target.value)}
+                                    className="bg-slate-900/50 border-slate-700 text-xs"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs text-slate-400 mb-1">Local</label>
+                                  <Input
+                                    value={session.location ?? ""}
+                                    onChange={(e) => updateShootingSessionLocation(index, e.target.value)}
+                                    placeholder="Ex: Centro, Praia..."
+                                    className="bg-slate-900/50 border-slate-700 text-xs"
+                                  />
+                                </div>
+                              </div>
                             </div>
                           ))}
-                          {editForm.locations.length === 0 && (
-                            <p className="text-sm text-slate-500 italic">Nenhum local adicionado</p>
+                          {editForm.shooting_sessions.length === 0 && (
+                            <p className="text-sm text-slate-500 italic text-center py-4">
+                              Nenhuma diária adicionada
+                            </p>
                           )}
                         </div>
                       ) : (
-                        <div className="space-y-1">
-                          {selectedProduction.locations ? (
-                            selectedProduction.locations.split(',').map((location, index) => (
-                              <Badge key={index} variant="secondary" className="mr-2">
-                                {location.trim()}
-                              </Badge>
+                        <div className="space-y-2">
+                          {selectedProduction.shooting_sessions && selectedProduction.shooting_sessions.length > 0 ? (
+                            selectedProduction.shooting_sessions.map((session, index) => (
+                              <div key={index} className="bg-slate-800/30 rounded-lg p-3">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <Calendar className="h-4 w-4 text-blue-400" />
+                                    <span className="text-sm text-slate-50">
+                                      {session.date ? new Date(session.date).toLocaleDateString('pt-BR') : 'Data não definida'}
+                                    </span>
+                                  </div>
+                                  {session.location && (
+                                    <div className="flex items-center gap-2">
+                                      <MapPin className="h-4 w-4 text-slate-400" />
+                                      <span className="text-sm text-slate-300">{session.location}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
                             ))
                           ) : (
-                            <p className="text-slate-50">--</p>
+                            <p className="text-sm text-slate-500 italic text-center py-4">
+                              Nenhuma diária cadastrada
+                            </p>
                           )}
                         </div>
-                      )}
-                    </div>
-
-                    {/* Filming Dates - Campos Dinâmicos */}
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="block text-sm font-medium text-slate-300">
-                          Dias de Filmagem
-                        </label>
-                        {isEditing && (
-                          <Button
-                            type="button"
-                            onClick={addFilmingDate}
-                            variant="ghost"
-                            size="sm"
-                            className="text-slate-400 hover:text-slate-300"
-                          >
-                            <Plus className="h-4 w-4 mr-1" />
-                            Adicionar
-                          </Button>
-                        )}
-                      </div>
-                      {isEditing ? (
-                        <div className="space-y-2">
-                          {editForm.filming_dates.map((date, index) => (
-                            <div key={index} className="flex gap-2">
-                              <Input
-                                type="date"
-                                value={date}
-                                onChange={(e) => updateFilmingDate(index, e.target.value)}
-                                className="bg-slate-900/50 border-slate-700 flex-1"
-                              />
-                              <Button
-                                type="button"
-                                onClick={() => removeFilmingDate(index)}
-                                variant="ghost"
-                                size="sm"
-                                className="text-red-400 hover:text-red-300"
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ))}
-                          {editForm.filming_dates.length === 0 && (
-                            <p className="text-sm text-slate-500 italic">Nenhuma data adicionada</p>
-                          )}
-                        </div>
-                      ) : (
-                        <p className="text-slate-50">--</p> // TODO: implementar exibição
                       )}
                     </div>
 

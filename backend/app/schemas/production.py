@@ -16,8 +16,7 @@ class ProductionCreate(BaseModel):
     client_id: Optional[int] = None
     status: Optional[ProductionStatus] = ProductionStatus.DRAFT
     deadline: Optional[datetime] = None
-    locations: Optional[str] = None
-    filming_dates: Optional[str] = None
+    shooting_sessions: Optional[List[dict]] = None
     payment_method: Optional[str] = None
     due_date: Optional[datetime] = None
     notes: Optional[str] = None
@@ -33,8 +32,7 @@ class ProductionUpdate(BaseModel):
     client_id: Optional[int] = None
     status: Optional[ProductionStatus] = None
     deadline: Optional[datetime] = None
-    locations: Optional[str] = None
-    filming_dates: Optional[str] = None
+    shooting_sessions: Optional[List[dict]] = None
     priority: Optional[str] = None
     subtotal: Optional[int] = None
     total_cost: Optional[int] = None
@@ -60,8 +58,7 @@ class ProductionResponse(BaseModel):
     client: Optional[ClientResponse] = None
     status: ProductionStatus
     deadline: Optional[datetime] = None
-    locations: Optional[str] = None
-    filming_dates: Optional[str] = None
+    shooting_sessions: Optional[List[dict]] = None
     notes: Optional[str] = None
     created_at: datetime
     updated_at: datetime

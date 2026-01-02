@@ -1,5 +1,5 @@
 from enum import Enum
-from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -25,8 +25,7 @@ class Production(Base):
     status: Mapped[ProductionStatus] = mapped_column(String, default=ProductionStatus.DRAFT)
     deadline: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
     priority: Mapped[str] = mapped_column(String, nullable=True)  # Priority level (high, medium, low)
-    locations: Mapped[str] = mapped_column(String, nullable=True)  # JSON string with filming locations
-    filming_dates: Mapped[str] = mapped_column(String, nullable=True)  # JSON string with filming dates
+    shooting_sessions: Mapped[list] = mapped_column(JSON, nullable=True)  # JSON array of shooting sessions with date and location
     created_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now())
     updated_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now(), onupdate=func.now())
 
