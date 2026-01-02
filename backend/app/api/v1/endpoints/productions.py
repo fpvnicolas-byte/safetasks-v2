@@ -23,7 +23,22 @@ async def create_production(
 ) -> ProductionResponse:
     """Create a new production for the current user's organization."""
 
-    # Create production linked to current user's organization
+    # Get organization's default tax rate
+    result = await db.execute(
+        select(User.__table__.c.organization_id).where(User.id == current_user.id)
+    )
+    org_result = await db.execute(
+        select(User.__table__.join(User.organization)).where(User.id == current_user.id)
+    )
+
+    # Get organization for default tax rate
+    from app.models.user import Organization
+    org_result = await db.execute(
+        select(Organization).where(Organization.id == current_user.organization_id)
+    )
+    organization = org_result.scalar_one()
+
+    # Create production linked to current user's organization with default tax rate
     production = Production(
         title=production_data.title,
         organization_id=current_user.organization_id,
@@ -31,7 +46,8 @@ async def create_production(
         deadline=production_data.deadline,
         shooting_sessions=production_data.shooting_sessions,
         payment_method=production_data.payment_method,
-        due_date=production_data.due_date
+        due_date=production_data.due_date,
+        tax_rate=organization.default_tax_rate  # Set default tax rate from organization
     )
 
     db.add(production)

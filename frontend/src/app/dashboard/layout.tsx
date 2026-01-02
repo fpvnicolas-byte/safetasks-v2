@@ -13,6 +13,7 @@ import {
   Wrench,
   Eye,
   EyeOff,
+  Settings,
 } from 'lucide-react';
 import { Toaster } from 'sonner';
 import { authApi } from '@/lib/api';
@@ -31,6 +32,7 @@ const navigation = [
   { name: 'Equipe', href: '/dashboard/users', icon: Users },
   { name: 'Serviços', href: '/dashboard/services', icon: Wrench },
   { name: 'Calendário', href: '/dashboard/calendar', icon: Calendar },
+  { name: 'Configurações', href: '/dashboard/settings', icon: Settings },
 ];
 
 // Privacy Context

@@ -2,22 +2,20 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user
+from app.api.deps import get_current_active_admin
 from app.db.session import get_db
 from app.models.user import Organization, User
-from app.schemas.organization import OrganizationResponse, OrganizationUpdate
 
 router = APIRouter()
 
 
-@router.get("/me", response_model=OrganizationResponse)
-async def get_my_organization(
-    current_user: User = Depends(get_current_user),
+@router.get("/settings")
+async def get_organization_settings(
+    current_user: User = Depends(get_current_active_admin),
     db: AsyncSession = Depends(get_db)
-) -> OrganizationResponse:
-    """Get current user's organization details."""
+):
+    """Get organization settings."""
 
-    # Get organization data
     result = await db.execute(
         select(Organization).where(Organization.id == current_user.organization_id)
     )
@@ -26,18 +24,25 @@ async def get_my_organization(
     if organization is None:
         raise HTTPException(status_code=404, detail="Organization not found")
 
-    return OrganizationResponse.from_orm(organization)
+    return {
+        "id": organization.id,
+        "name": organization.name,
+        "cnpj": organization.cnpj,
+        "phone": organization.phone,
+        "email": organization.email,
+        "address": organization.address,
+        "default_tax_rate": organization.default_tax_rate,
+    }
 
 
-@router.patch("/me", response_model=OrganizationResponse)
-async def update_my_organization(
-    org_data: OrganizationUpdate,
-    current_user: User = Depends(get_current_user),
+@router.patch("/settings")
+async def update_organization_settings(
+    settings_data: dict,
+    current_user: User = Depends(get_current_active_admin),
     db: AsyncSession = Depends(get_db)
-) -> OrganizationResponse:
-    """Update current user's organization details."""
+):
+    """Update organization settings."""
 
-    # Get organization to update
     result = await db.execute(
         select(Organization).where(Organization.id == current_user.organization_id)
     )
@@ -46,13 +51,32 @@ async def update_my_organization(
     if organization is None:
         raise HTTPException(status_code=404, detail="Organization not found")
 
-    # Update fields if provided
-    update_data = org_data.dict(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(organization, field, value)
+    # Update allowed fields
+    allowed_fields = ['name', 'cnpj', 'phone', 'email', 'address', 'default_tax_rate']
+
+    for field in allowed_fields:
+        if field in settings_data:
+            value = settings_data[field]
+            if field == 'default_tax_rate' and value is not None:
+                # Ensure tax rate is a valid float
+                try:
+                    value = float(value)
+                    if value < 0 or value > 100:
+                        raise ValueError("Tax rate must be between 0 and 100")
+                except (ValueError, TypeError):
+                    raise HTTPException(status_code=400, detail="Invalid tax rate value")
+            setattr(organization, field, value)
 
     db.add(organization)
     await db.commit()
     await db.refresh(organization)
 
-    return OrganizationResponse.from_orm(organization)
+    return {
+        "id": organization.id,
+        "name": organization.name,
+        "cnpj": organization.cnpj,
+        "phone": organization.phone,
+        "email": organization.email,
+        "address": organization.address,
+        "default_tax_rate": organization.default_tax_rate,
+    }
