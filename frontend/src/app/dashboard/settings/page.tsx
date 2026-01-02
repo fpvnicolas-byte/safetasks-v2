@@ -208,16 +208,16 @@ export default function SettingsPage() {
                 <div className="relative">
                   <Input
                     type="number"
-                    step="0.01"
+                    step="1"
                     min="0"
                     max="100"
                     value={formData.default_tax_rate}
                     onChange={(e) => {
-                      const value = e.target.value;
-                      const parsedValue = parseFloat(value);
-                      setFormData({ ...formData, default_tax_rate: isNaN(parsedValue) ? 0 : parsedValue });
+                      const value = e.target.value.replace(/\D/g, ""); // Remove any non-numeric characters
+                      const parsedValue = parseInt(value) || 0;
+                      setFormData({ ...formData, default_tax_rate: parsedValue });
                     }}
-                    placeholder="0.00"
+                    placeholder="0"
                     className="bg-slate-900/50 border-slate-700 pr-8"
                   />
                   <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-sm">%</span>

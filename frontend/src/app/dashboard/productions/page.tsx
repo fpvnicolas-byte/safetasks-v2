@@ -1053,6 +1053,8 @@ export default function ProductionsPage() {
                             onBlur={(e) => {
                               if (editForm.discount < 0) {
                                 setEditForm({ ...editForm, discount: 0 });
+                              } else if (editForm.discount > 0 && editForm.discount < 1) {
+                                setEditForm({ ...editForm, discount: 1 });
                               }
                             }}
                             className="bg-slate-900/50 border-slate-700 pl-8"
@@ -1075,17 +1077,17 @@ export default function ProductionsPage() {
                         <div className="relative">
                           <Input
                             type="number"
-                            step="0.01"
+                            step="1"
                             min="0"
                             max="100"
                             value={editForm.tax_rate}
                             onChange={(e) => {
-                              const value = e.target.value;
-                              const parsedValue = parseFloat(value);
-                              setEditForm({ ...editForm, tax_rate: isNaN(parsedValue) ? 0 : parsedValue });
+                              const value = e.target.value.replace(/\D/g, ""); // Remove any non-numeric characters
+                              const parsedValue = parseInt(value) || 0;
+                              setEditForm({ ...editForm, tax_rate: parsedValue });
                             }}
                             className="bg-slate-900/50 border-slate-700 pr-8"
-                            placeholder="0.00"
+                            placeholder="0"
                           />
                           <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-sm">%</span>
                         </div>
@@ -1358,6 +1360,8 @@ export default function ProductionsPage() {
                             onBlur={(e) => {
                               if (newCrewFee < 0) {
                                 setNewCrewFee(0);
+                              } else if (newCrewFee > 0 && newCrewFee < 1) {
+                                setNewCrewFee(1);
                               }
                             }}
                             placeholder="0.00"
@@ -1469,6 +1473,8 @@ export default function ProductionsPage() {
                             onBlur={(e) => {
                               if (newExpenseValue < 0) {
                                 setNewExpenseValue(0);
+                              } else if (newExpenseValue > 0 && newExpenseValue < 1) {
+                                setNewExpenseValue(1);
                               }
                             }}
                             placeholder="0.00"
