@@ -123,7 +123,8 @@ export default function ServicesPage() {
 
     try {
       // Note: Backend doesn't have delete endpoint yet - placeholder
-      console.log(`Delete service ${serviceToDelete.id} - endpoint not implemented yet`);
+      // Realizar exclusão via API
+      await servicesApi.deleteService(serviceToDelete.id);
 
       // Simular exclusão bem-sucedida para demonstração
       setServices(services.filter(s => s.id !== serviceToDelete.id));
@@ -134,7 +135,30 @@ export default function ServicesPage() {
       toast.success("Serviço excluído com sucesso!");
     } catch (err: any) {
       console.error("Erro ao excluir serviço:", err);
-      toast.error("Erro ao excluir serviço");
+
+      // Tratamento específico para restrição de chave estrangeira
+      if (err.response?.status === 400 && err.response?.data?.detail?.includes("used in productions")) {
+        toast.error("Não é possível excluir um serviço vinculado a uma produção");
+      } else if (err.response?.status === 404) {
+        toast.error("Serviço não encontrado");
+      } else {
+        // Tratamento específico para restrição de chave estrangeira
+      if (err.response?.status === 400 && err.response?.data?.detail?.includes("used in productions")) {
+        toast.error("Não é possível excluir um serviço vinculado a uma produção");
+      } else if (err.response?.status === 404) {
+        toast.error("Serviço não encontrado");
+      } else {
+        toast.error("Erro ao excluir serviço");
+      }
+      }
+      // Tratamento específico para restrição de chave estrangeira
+      if (err.response?.status === 400 && err.response?.data?.detail?.includes("used in productions")) {
+        toast.error("Não é possível excluir um serviço vinculado a uma produção");
+      } else if (err.response?.status === 404) {
+        toast.error("Serviço não encontrado");
+      } else {
+        toast.error("Erro ao excluir serviço");
+      }
     } finally {
       setServiceToDelete(null);
     }

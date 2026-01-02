@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Edit, Search, Filter, X, Save, Calendar, MapPin, CreditCard, DollarSign, TrendingUp, Users, Package, User, FileText } from 'lucide-react';
+import { Plus, Edit, Search, Filter, X, Save, Calendar, Trash2, MapPin, CreditCard, DollarSign, TrendingUp, Users, Package, User, FileText } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { productionsApi, servicesApi, usersApi, clientsApi } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
@@ -102,6 +102,7 @@ export default function ProductionsPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [productionToDelete, setProductionToDelete] = useState<Production | null>(null);
   const { mutate } = useSWRConfig();
   const router = useRouter();
 
@@ -422,6 +423,26 @@ export default function ProductionsPage() {
       filming_dates: prev.filming_dates.map((date, i) => i === index ? value : date)
     }));
   };
+
+  const handleDeleteProduction = (production: Production) => {
+    setProductionToDelete(production);
+  };
+
+  const confirmDeleteProduction = async () => {
+    if (!productionToDelete) return;
+    try {
+      await productionsApi.deleteProduction(productionToDelete.id);
+      setProductions(productions.filter(p => p.id !== productionToDelete.id));
+      await mutate('/api/v1/productions');
+      toast.success("Produção excluída com sucesso!");
+    } catch (err: any) {
+      console.error("Erro ao excluir produção:", err);
+      toast.error("Erro ao excluir produção");
+    } finally {
+      setProductionToDelete(null);
+    }
+  };
+
 
   const handleEdit = (production: Production) => {
     setSelectedProduction(production);

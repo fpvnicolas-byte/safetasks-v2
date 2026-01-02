@@ -2,6 +2,8 @@ from typing import List
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_active_admin, get_current_user
@@ -56,3 +58,43 @@ async def get_services(
     else:
         # Crew members see services without pricing information
         return [ServiceCrewRead.from_orm(service) for service in services]
+
+
+@router.delete("/{service_id}", response_model=ServiceResponse)
+async def delete_service(
+    service_id: int,
+    current_user: User = Depends(get_current_active_admin),
+    db: AsyncSession = Depends(get_db)
+) -> ServiceResponse:
+    """Delete a service if it belongs to the current user's organization and is not used in any production."""
+
+    # Get service and verify ownership
+    result = await db.execute(
+        select(Service).where(
+            Service.id == service_id,
+            Service.organization_id == current_user.organization_id
+        )
+    )
+    service = result.scalar_one_or_none()
+
+    if not service:
+        raise HTTPException(status_code=404, detail="Service not found")
+
+    # Check if service is used in any production items
+    from app.models.production_item import ProductionItem
+    result = await db.execute(
+        select(ProductionItem).where(ProductionItem.service_id == service_id)
+    )
+    production_items = result.scalars().all()
+
+    if production_items:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot delete service that is used in productions"
+        )
+
+    # Delete the service
+    await db.delete(service)
+    await db.commit()
+
+    return ServiceResponse.from_orm(service)
