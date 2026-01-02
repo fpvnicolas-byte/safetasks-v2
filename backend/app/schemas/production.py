@@ -1,0 +1,111 @@
+from datetime import datetime
+from typing import List, Optional
+
+from pydantic import BaseModel, field_validator
+
+from app.core.utils import make_datetime_naive
+from app.models.production import ProductionStatus
+from app.schemas.client import ClientResponse
+from app.schemas.expense import ExpenseResponse
+from app.schemas.production_crew import ProductionCrewResponse, ProductionCrewMember, ProductionCrewMemberRestricted
+from app.schemas.production_item import ProductionItemResponse, ProductionItemCrewResponse
+
+
+class ProductionCreate(BaseModel):
+    title: str
+    client_id: Optional[int] = None
+    status: Optional[ProductionStatus] = ProductionStatus.DRAFT
+    deadline: Optional[datetime] = None
+    locations: Optional[str] = None
+    filming_dates: Optional[str] = None
+    payment_method: Optional[str] = None
+    due_date: Optional[datetime] = None
+
+    @field_validator('deadline', 'due_date', mode='before')
+    @classmethod
+    def validate_dates(cls, v):
+        return make_datetime_naive(v)
+
+
+class ProductionUpdate(BaseModel):
+    title: Optional[str] = None
+    client_id: Optional[int] = None
+    status: Optional[ProductionStatus] = None
+    deadline: Optional[datetime] = None
+    locations: Optional[str] = None
+    filming_dates: Optional[str] = None
+    priority: Optional[str] = None
+    subtotal: Optional[int] = None
+    total_cost: Optional[int] = None
+    total_value: Optional[int] = None
+    discount: Optional[int] = None
+    tax_rate: Optional[float] = None
+    payment_method: Optional[str] = None
+    payment_status: Optional[str] = None
+    due_date: Optional[datetime] = None
+
+    @field_validator('deadline', 'due_date', mode='before')
+    @classmethod
+    def validate_dates(cls, v):
+        return make_datetime_naive(v)
+
+
+class ProductionResponse(BaseModel):
+    id: int
+    title: str
+    organization_id: int
+    client_id: Optional[int] = None
+    client: Optional[ClientResponse] = None
+    status: ProductionStatus
+    deadline: Optional[datetime] = None
+    locations: Optional[str] = None
+    filming_dates: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    # Payment fields
+    payment_method: Optional[str] = None
+    payment_status: str = "pending"
+    due_date: Optional[datetime] = None
+
+    # Financial fields
+    subtotal: int = 0
+    discount: int = 0
+    tax_rate: float = 0.0
+    tax_amount: int = 0
+    total_value: int = 0
+    total_cost: int = 0
+    profit: int = 0
+
+    # Related items
+    items: List[ProductionItemResponse] = []
+    expenses: List[ExpenseResponse] = []
+    crew: List[ProductionCrewResponse] = []
+
+    class Config:
+        from_attributes = True
+
+
+class ProductionCrewResponse(BaseModel):
+    """Schema for crew members - omits financial fields entirely"""
+    id: int
+    title: str
+    status: ProductionStatus
+    deadline: Optional[datetime] = None
+    locations: Optional[str] = None
+    filming_dates: Optional[str] = None
+    created_at: datetime
+
+    # Payment fields - crew can see payment status and due date
+    payment_status: str = "pending"
+    due_date: Optional[datetime] = None
+
+    # Related items - financial fields explicitly omitted
+    # Items without pricing information
+    items: List[ProductionItemCrewResponse] = []
+    # expenses field COMPLETELY REMOVED for crew
+    # Only their own crew information
+    crew: List[ProductionCrewMemberRestricted] = []
+
+    class Config:
+        from_attributes = True
