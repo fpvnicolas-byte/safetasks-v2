@@ -9,6 +9,7 @@ interface CardListItemProps {
   category?: string;
   onEdit?: (id: number) => void;
   onDelete?: (id: number) => void;
+  privacyMode?: boolean;
 }
 
 interface CardListProps {
@@ -27,7 +28,8 @@ export function CardListItem({
   price,
   category,
   onEdit,
-  onDelete
+  onDelete,
+  privacyMode = false
 }: CardListItemProps) {
   return (
     <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 hover:bg-slate-950/50 transition-all duration-300 group">
@@ -78,7 +80,7 @@ export function CardListItem({
       {price !== undefined && (
         <div className="flex items-center justify-between">
           <span className="text-sm text-slate-500">Preço base:</span>
-          <span className="text-lg font-bold text-emerald-400">
+          <span className={`text-lg font-bold text-emerald-400 transition-all duration-300 ${privacyMode ? 'blur-md pointer-events-none select-none' : ''}`}>
             R$ {(price / 100).toFixed(2).replace('.', ',')}
           </span>
         </div>

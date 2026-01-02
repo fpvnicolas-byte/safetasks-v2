@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useSWRConfig } from 'swr';
 import { toast } from 'sonner';
+import { usePrivacy } from '../layout';
 
 // Interfaces baseadas nos schemas do backend
 interface ProductionCrewMember {
@@ -96,6 +97,7 @@ const statusColors: Record<ProductionStatus, string> = {
 };
 
 export default function ProductionsPage() {
+  const { privacyMode } = usePrivacy();
   const [productions, setProductions] = useState<Production[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>('');
@@ -718,13 +720,17 @@ export default function ProductionsPage() {
 
                 <div className="flex items-center text-sm text-slate-400">
                   <DollarSign className="h-4 w-4 mr-2" />
-                  {formatCurrency(production.total_value)}
+                  <span className={`transition-all duration-300 ${privacyMode ? 'blur-md pointer-events-none select-none' : ''}`}>
+                    {formatCurrency(production.total_value)}
+                  </span>
                 </div>
 
                 {production.profit !== 0 && (
                   <div className="flex items-center text-sm text-emerald-400">
                     <TrendingUp className="h-4 w-4 mr-2" />
-                    {formatCurrency(production.profit)}
+                    <span className={`transition-all duration-300 ${privacyMode ? 'blur-md pointer-events-none select-none' : ''}`}>
+                      {formatCurrency(production.profit)}
+                    </span>
                   </div>
                 )}
               </div>

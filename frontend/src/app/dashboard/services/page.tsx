@@ -22,6 +22,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useSWRConfig } from 'swr';
 import { toast } from 'sonner';
 import { CardList } from '@/components/ui/card-list';
+import { usePrivacy } from '../layout';
 
 // Interfaces baseadas nos schemas do backend
 interface Service {
@@ -41,6 +42,7 @@ interface ServiceFormData {
 }
 
 export default function ServicesPage() {
+  const { privacyMode } = usePrivacy();
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>('');
@@ -187,6 +189,7 @@ export default function ServicesPage() {
     price: service.default_price, // Will be formatted as R$ XX,XX
     category: service.unit ? `Unidade: ${service.unit}` : undefined,
     onDelete: handleDeleteService,
+    privacyMode, // Pass privacy mode to CardList
   }));
 
   if (loading) {

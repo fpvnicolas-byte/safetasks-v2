@@ -61,6 +61,10 @@ export default function DashboardLayout({
   const [privacyMode, setPrivacyMode] = useState(false);
   const pathname = usePathname();
 
+  // Define routes that should show the privacy toggle button (pages with financial data)
+  const financialRoutes = ['/dashboard', '/dashboard/productions', '/dashboard/services'];
+  const shouldShowPrivacyButton = financialRoutes.includes(pathname);
+
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -195,17 +199,19 @@ export default function DashboardLayout({
               </p>
             </div>
             <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setPrivacyMode(!privacyMode)}
-                className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
-                title={privacyMode ? 'Desativar modo privacidade' : 'Ativar modo privacidade'}
-              >
-                {privacyMode ? (
-                  <EyeOff className="h-5 w-5 text-slate-400" />
-                ) : (
-                  <Eye className="h-5 w-5 text-slate-400" />
-                )}
-              </button>
+              {shouldShowPrivacyButton && (
+                <button
+                  onClick={() => setPrivacyMode(!privacyMode)}
+                  className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                  title={privacyMode ? 'Desativar modo privacidade' : 'Ativar modo privacidade'}
+                >
+                  {privacyMode ? (
+                    <EyeOff className="h-5 w-5 text-slate-400" />
+                  ) : (
+                    <Eye className="h-5 w-5 text-slate-400" />
+                  )}
+                </button>
+              )}
               <div className="text-right">
                 <p className="text-sm text-slate-400">
                   {new Date().toLocaleDateString('pt-BR', {
