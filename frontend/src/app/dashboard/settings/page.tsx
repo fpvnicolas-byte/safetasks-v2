@@ -205,20 +205,23 @@ export default function SettingsPage() {
                 <label className="block text-sm font-medium text-slate-300 mb-2">
                   Taxa de Imposto Padrão (%)
                 </label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="100"
-                  value={formData.default_tax_rate}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    const parsedValue = parseFloat(value);
-                    setFormData({ ...formData, default_tax_rate: isNaN(parsedValue) ? 0 : parsedValue });
-                  }}
-                  placeholder="0.00"
-                  className="bg-slate-900/50 border-slate-700"
-                />
+                <div className="relative">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    value={formData.default_tax_rate}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      const parsedValue = parseFloat(value);
+                      setFormData({ ...formData, default_tax_rate: isNaN(parsedValue) ? 0 : parsedValue });
+                    }}
+                    placeholder="0.00"
+                    className="bg-slate-900/50 border-slate-700 pr-8"
+                  />
+                  <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-sm">%</span>
+                </div>
                 <p className="text-xs text-slate-500 mt-1">
                   Esta taxa será aplicada automaticamente a novas produções
                 </p>

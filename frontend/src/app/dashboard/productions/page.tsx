@@ -1038,14 +1038,27 @@ export default function ProductionsPage() {
                         Desconto (R$)
                       </label>
                       {isEditing ? (
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={editForm.discount}
-                          onChange={(e) => setEditForm({ ...editForm, discount: parseFloat(e.target.value) || 0 })}
-                          className="bg-slate-900/50 border-slate-700"
-                          placeholder="0.00"
-                        />
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-sm">R$</span>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={editForm.discount}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              const parsedValue = parseFloat(value);
+                              setEditForm({ ...editForm, discount: isNaN(parsedValue) ? 0 : parsedValue });
+                            }}
+                            onBlur={(e) => {
+                              if (editForm.discount < 0) {
+                                setEditForm({ ...editForm, discount: 0 });
+                              }
+                            }}
+                            className="bg-slate-900/50 border-slate-700 pl-8"
+                            placeholder="0.00"
+                          />
+                        </div>
                       ) : (
                         <p className="text-slate-50">
                           {formatCurrency(selectedProduction.discount)}
@@ -1059,20 +1072,23 @@ export default function ProductionsPage() {
                         Taxa de Imposto (%)
                       </label>
                       {isEditing ? (
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          max="100"
-                          value={editForm.tax_rate}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            const parsedValue = parseFloat(value);
-                            setEditForm({ ...editForm, tax_rate: isNaN(parsedValue) ? 0 : parsedValue });
-                          }}
-                          className="bg-slate-900/50 border-slate-700"
-                          placeholder="0.00"
-                        />
+                        <div className="relative">
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            max="100"
+                            value={editForm.tax_rate}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              const parsedValue = parseFloat(value);
+                              setEditForm({ ...editForm, tax_rate: isNaN(parsedValue) ? 0 : parsedValue });
+                            }}
+                            className="bg-slate-900/50 border-slate-700 pr-8"
+                            placeholder="0.00"
+                          />
+                          <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-sm">%</span>
+                        </div>
                       ) : (
                         <p className="text-slate-50">
                           {selectedProduction.tax_rate}%
@@ -1219,6 +1235,12 @@ export default function ProductionsPage() {
                           min="1"
                           value={newItemQuantity}
                           onChange={(e) => setNewItemQuantity(parseInt(e.target.value) || 1)}
+                          onBlur={(e) => {
+                            const value = parseInt(e.target.value);
+                            if (isNaN(value) || value < 1) {
+                              setNewItemQuantity(1);
+                            }
+                          }}
                           placeholder="Quantidade"
                           className="bg-slate-900/50 border-slate-700"
                         />
@@ -1321,14 +1343,27 @@ export default function ProductionsPage() {
                         />
                       </div>
                       <div>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={newCrewFee}
-                          onChange={(e) => setNewCrewFee(parseFloat(e.target.value) || 0)}
-                          placeholder="Cachê (R$)"
-                          className="bg-slate-900/50 border-slate-700"
-                        />
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-sm">R$</span>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={newCrewFee}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              const parsedValue = parseFloat(value);
+                              setNewCrewFee(isNaN(parsedValue) ? 0 : parsedValue);
+                            }}
+                            onBlur={(e) => {
+                              if (newCrewFee < 0) {
+                                setNewCrewFee(0);
+                              }
+                            }}
+                            placeholder="0.00"
+                            className="bg-slate-900/50 border-slate-700 pl-8"
+                          />
+                        </div>
                       </div>
                       <div className="md:col-span-3">
                         <Button
@@ -1419,14 +1454,27 @@ export default function ProductionsPage() {
                         />
                       </div>
                       <div>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={newExpenseValue}
-                          onChange={(e) => setNewExpenseValue(parseFloat(e.target.value) || 0)}
-                          placeholder="Valor (R$)"
-                          className="bg-slate-900/50 border-slate-700"
-                        />
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-sm">R$</span>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={newExpenseValue}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              const parsedValue = parseFloat(value);
+                              setNewExpenseValue(isNaN(parsedValue) ? 0 : parsedValue);
+                            }}
+                            onBlur={(e) => {
+                              if (newExpenseValue < 0) {
+                                setNewExpenseValue(0);
+                              }
+                            }}
+                            placeholder="0.00"
+                            className="bg-slate-900/50 border-slate-700 pl-8"
+                          />
+                        </div>
                       </div>
                       <div>
                         <Select
