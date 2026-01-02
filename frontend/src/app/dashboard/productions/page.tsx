@@ -1065,7 +1065,11 @@ export default function ProductionsPage() {
                           min="0"
                           max="100"
                           value={editForm.tax_rate}
-                          onChange={(e) => setEditForm({ ...editForm, tax_rate: parseFloat(e.target.value) || 0 })}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            const parsedValue = parseFloat(value);
+                            setEditForm({ ...editForm, tax_rate: isNaN(parsedValue) ? 0 : parsedValue });
+                          }}
                           className="bg-slate-900/50 border-slate-700"
                           placeholder="0.00"
                         />

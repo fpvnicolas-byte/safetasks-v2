@@ -52,8 +52,9 @@ async def calculate_production_totals(production_id: int, db: AsyncSession) -> N
 
     production, organization = row
 
-    # If production tax_rate is not set (0, 0.0, or None), use organization's default_tax_rate
-    if production.tax_rate is None or production.tax_rate == 0 or production.tax_rate == 0.0:
+    # Only use organization's default_tax_rate if production tax_rate is None (not set)
+    # Allow explicit 0.0 values set by user
+    if production.tax_rate is None:
         production.tax_rate = organization.default_tax_rate or 0.0
 
     # Use the tax_rate that is now set on the production
