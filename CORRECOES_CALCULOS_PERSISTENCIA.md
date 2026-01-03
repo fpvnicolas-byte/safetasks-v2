@@ -215,3 +215,4 @@ profit = (total_value - tax_amount) - total_cost            # Lucro líquido
 **🎯 TESTE:** Adicione um item de R$ 100,00 → card deve mostrar valor > R$ 0,00. Remova → deve recalcular automaticamente.
 
 O sistema financeiro está agora completamente operacional! 🚀
+

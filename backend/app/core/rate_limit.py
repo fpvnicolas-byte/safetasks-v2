@@ -19,3 +19,4 @@ RATE_LIMITS = {
     "read": "200/minute",  # Read operations: 200 requests per minute
 }
 
+

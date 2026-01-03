@@ -335,3 +335,4 @@ INFO: Production 1: Found 1 expenses (R$ 50.00), 1 crew (R$ 20.00), total_cost =
 O backend agora deve retornar dados completos e cálculos financeiros precisos! 🎉
 
 **Teste:** Acesse `http://localhost:8000/docs` → `GET /productions/{id}` e verifique se mostra dados populados e `total_cost > 0`. 📊
+

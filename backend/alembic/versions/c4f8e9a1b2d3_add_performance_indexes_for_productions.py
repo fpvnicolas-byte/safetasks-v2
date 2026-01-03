@@ -99,3 +99,4 @@ def downgrade() -> None:
     op.drop_index('idx_productions_deadline', table_name='productions')
     op.drop_index('idx_productions_org_status', table_name='productions')
 
+

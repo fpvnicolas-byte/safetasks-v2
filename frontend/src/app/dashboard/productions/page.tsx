@@ -156,7 +156,7 @@ export default function ProductionsPage() {
     title: string;
     status: ProductionStatus;
     deadline: string;
-    shooting_sessions: Array<{date: string | null, location: string | null}>;
+    shooting_sessions: Array<{ date: string | null, location: string | null }>;
     payment_method: string;
     payment_status: string;
     due_date: string;
@@ -168,7 +168,7 @@ export default function ProductionsPage() {
     title: '',
     status: 'draft' as ProductionStatus,
     deadline: '',
-    shooting_sessions: [] as Array<{date: string | null, location: string | null}>,
+    shooting_sessions: [] as Array<{ date: string | null, location: string | null }>,
     payment_method: '',
     payment_status: 'pending',
     due_date: '',
@@ -1227,7 +1227,7 @@ export default function ProductionsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <Select
-                          value={selectedService?.id || ''}
+                          value={selectedService?.id ? selectedService.id.toString() : ''}
                           onValueChange={(value) => {
                             const service = services.find(s => s.id === parseInt(value));
                             setSelectedService(service || null);
@@ -1238,7 +1238,7 @@ export default function ProductionsPage() {
                             }
                           }}
                         >
-                          <SelectTrigger className="bg-slate-900/50 border-slate-700">
+                          <SelectTrigger className="bg-slate-900/50 border-slate-700 w-full">
                             <SelectValue placeholder="Selecionar serviço" />
                           </SelectTrigger>
                           <SelectContent className="bg-slate-900 border-slate-700">
@@ -1332,7 +1332,7 @@ export default function ProductionsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <Select
-                          value={selectedUser?.id || ''}
+                          value={selectedUser?.id ? selectedUser.id.toString() : ''}
                           onValueChange={(value) => {
                             const user = users.find(u => u.id === parseInt(value));
                             setSelectedUser(user || null);
@@ -1343,7 +1343,7 @@ export default function ProductionsPage() {
                             }
                           }}
                         >
-                          <SelectTrigger className="bg-slate-900/50 border-slate-700">
+                          <SelectTrigger className="bg-slate-900/50 border-slate-700 h-10 min-h-[40px] px-3 py-2 text-left w-full flex items-center justify-between">
                             <SelectValue placeholder="Selecionar usuário" />
                           </SelectTrigger>
                           <SelectContent className="bg-slate-900 border-slate-700">

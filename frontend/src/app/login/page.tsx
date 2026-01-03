@@ -113,8 +113,8 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-muted-foreground">
-            <p>Para teste: samadhi@gmail.com</p>
+          <div className="mt-6 text-center text-xs text-muted-foreground uppercase font-bold">
+            <p>Registrar ainda não desenvolvido</p>
           </div>
         </CardContent>
       </Card>

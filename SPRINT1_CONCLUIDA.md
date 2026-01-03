@@ -199,3 +199,4 @@ A FVA agora possui uma ferramenta poderosa para gestão de produções audiovisu
 **🎯 PRÓXIMA FASE:** Sprint 2 - Dashboard Executivo e Relatórios Avançados
 
 #Sucesso #FVA #SafeTasks #Escalabilidade
+

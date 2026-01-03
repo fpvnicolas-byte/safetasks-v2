@@ -200,3 +200,4 @@ except Exception as e:
 **Teste:** Execute o backend e acesse `/docs` → `GET /productions`. Deve retornar dados completos sem erros!
 
 O problema foi resolvido removendo as verificações desnecessárias que causavam conflitos com o mecanismo de lazy loading do SQLAlchemy. 🎉
+

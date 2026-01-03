@@ -263,3 +263,4 @@ const { privacyMode } = usePrivacy();
 **🚀 TESTE:** Abra o calendário e veja "Teste" e "Rafa na Brasa" aparecendo com cores corretas!
 
 O calendário está completamente funcional e integrado! 🎉
+

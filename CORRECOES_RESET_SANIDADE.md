@@ -306,3 +306,4 @@ const productions = response.productionsList || [];  // ✅ Claro
 **Teste:** Acesse `/docs` → `GET /productions` e verifique dados populados. Depois teste o frontend. 📊
 
 O sistema agora deve funcionar perfeitamente! 🎉
+

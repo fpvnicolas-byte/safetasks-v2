@@ -201,3 +201,4 @@ const getEventColor = (eventType) => {
 **🚀 TESTE:** Abra o calendário e veja apenas os 3 tipos de eventos com cores apropriadas!
 
 O calendário agora representa perfeitamente a operação da produtora! 🎬
+

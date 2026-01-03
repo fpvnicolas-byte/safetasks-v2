@@ -208,3 +208,4 @@ MissingGreenlet: greenlet_spawn has not been called...
 **🚀 TESTE:** Execute o backend e acesse `/docs` → `GET /productions`. Deve funcionar perfeitamente agora!
 
 O sistema está totalmente funcional! 🎉
+

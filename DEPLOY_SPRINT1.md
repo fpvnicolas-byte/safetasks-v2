@@ -276,3 +276,4 @@ Após deploy bem-sucedido da Sprint 1:
 
 **Próxima Etapa:** Executar comandos de deploy e validar funcionalidade
 
+

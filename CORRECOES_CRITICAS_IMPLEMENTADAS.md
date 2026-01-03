@@ -194,3 +194,4 @@ INFO: Production 1: tax_rate=3.0%, tax_amount=R$ 3.00, total_value=R$ 103.00, pr
 
 O backend agora deve retornar dados completos e cálculos financeiros precisos! 🚀
 
+
