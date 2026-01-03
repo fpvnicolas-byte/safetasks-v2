@@ -77,9 +77,29 @@ export default function DashboardPage() {
       {/* Additional background elements for glassmorphism visibility */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Geometric patterns */}
-        <div className="absolute top-20 left-20 w-72 h-72 rounded-full bg-gradient-to-r from-blue-500/8 to-purple-500/8 blur-3xl animate-pulse" style={{ animationDuration: '4s' }} />
-        <div className="absolute bottom-32 right-32 w-96 h-96 rounded-full bg-gradient-to-r from-emerald-500/5 to-cyan-500/5 blur-3xl animate-pulse" style={{ animationDuration: '4s', animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/4 w-48 h-48 rounded-full bg-gradient-to-r from-pink-500/4 to-orange-500/4 blur-2xl animate-pulse" style={{ animationDuration: '4s', animationDelay: '2s' }} />
+        <div
+          className="absolute top-20 left-20 w-72 h-72 rounded-full bg-linear-to-r from-blue-500/8 to-purple-500/8 blur-3xl"
+          style={{
+            animation: 'smoothPulse 6s ease-in-out infinite',
+            willChange: 'opacity, transform'
+          }}
+        />
+        <div
+          className="absolute bottom-32 right-32 w-96 h-96 rounded-full bg-linear-to-r from-emerald-500/5 to-cyan-500/5 blur-3xl"
+          style={{
+            animation: 'smoothPulse 6s ease-in-out infinite',
+            animationDelay: '2s',
+            willChange: 'opacity, transform'
+          }}
+        />
+        <div
+          className="absolute top-1/2 left-1/4 w-48 h-48 rounded-full bg-linear-to-r from-pink-500/4 to-orange-500/4 blur-2xl"
+          style={{
+            animation: 'smoothPulse 6s ease-in-out infinite',
+            animationDelay: '4s',
+            willChange: 'opacity, transform'
+          }}
+        />
 
         {/* Subtle grid overlay */}
         <div className="absolute inset-0 opacity-[0.02]">
@@ -93,9 +113,30 @@ export default function DashboardPage() {
         </div>
 
         {/* Floating particles effect */}
-        <div className="absolute top-1/4 right-1/4 w-2 h-2 bg-white/20 rounded-full blur-sm animate-bounce" style={{ animationDelay: '0.5s' }} />
-        <div className="absolute bottom-1/4 left-1/3 w-1 h-1 bg-white/15 rounded-full blur-sm animate-bounce" style={{ animationDelay: '1.5s' }} />
-        <div className="absolute top-3/4 right-1/3 w-1.5 h-1.5 bg-white/25 rounded-full blur-sm animate-bounce" style={{ animationDelay: '2.5s' }} />
+        <div
+          className="absolute top-1/4 right-1/4 w-2 h-2 bg-white/20 rounded-full blur-sm"
+          style={{
+            animation: 'smoothFloat 8s ease-in-out infinite',
+            animationDelay: '0s',
+            willChange: 'transform, opacity'
+          }}
+        />
+        <div
+          className="absolute bottom-1/4 left-1/3 w-1 h-1 bg-white/15 rounded-full blur-sm"
+          style={{
+            animation: 'smoothFloat 8s ease-in-out infinite',
+            animationDelay: '2.5s',
+            willChange: 'transform, opacity'
+          }}
+        />
+        <div
+          className="absolute top-3/4 right-1/3 w-1.5 h-1.5 bg-white/25 rounded-full blur-sm"
+          style={{
+            animation: 'smoothFloat 8s ease-in-out infinite',
+            animationDelay: '5s',
+            willChange: 'transform, opacity'
+          }}
+        />
       </div>
 
       <div className="max-w-7xl mx-auto relative z-10">
