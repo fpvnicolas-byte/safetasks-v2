@@ -135,7 +135,7 @@ export default function ProductionsPage() {
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [newItemQuantity, setNewItemQuantity] = useState(1);
   const [newCrewRole, setNewCrewRole] = useState('');
-  const [newCrewFee, setNewCrewFee] = useState(0);
+  const [newCrewFee, setNewCrewFee] = useState(1);
 
   // Estados para despesas
   const [newExpenseName, setNewExpenseName] = useState('');
@@ -307,7 +307,7 @@ export default function ProductionsPage() {
       // Reset form
       setSelectedUser(null);
       setNewCrewRole('');
-      setNewCrewFee(0);
+      setNewCrewFee(1);
     } catch (err: any) {
       console.error("Erro ao adicionar membro da equipe:", err);
 
@@ -1383,8 +1383,8 @@ export default function ProductionsPage() {
                               setNewCrewFee(isNaN(parsedValue) ? 0 : parsedValue);
                             }}
                             onBlur={(e) => {
-                              if (newCrewFee < 0) {
-                                setNewCrewFee(0);
+                              if (newCrewFee < 1) {
+                                setNewCrewFee(1);
                               } else if (newCrewFee > 0 && newCrewFee < 1) {
                                 setNewCrewFee(1);
                               }
