@@ -76,6 +76,14 @@ interface Production {
   expenses: ProductionExpense[];
 }
 
+interface ProductionsResponse {
+  productionsList: Production[];
+  total: number;
+  skip: number;
+  limit: number;
+  has_more: boolean;
+}
+
 type ProductionStatus = 'draft' | 'proposal_sent' | 'approved' | 'in_progress' | 'completed' | 'canceled';
 
 const statusLabels: Record<ProductionStatus, string> = {
@@ -204,8 +212,8 @@ export default function ProductionsPage() {
       await mutate('/api/v1/productions');
 
       // Buscar produção atualizada para atualizar o estado local
-      const updatedProductions = await productionsApi.getProductions();
-      const updatedProduction = updatedProductions.find((p: Production) => p.id === selectedProduction.id);
+      const response: ProductionsResponse = await productionsApi.getProductions();
+      const updatedProduction = response.productionsList.find((p: Production) => p.id === selectedProduction.id);
       if (updatedProduction) {
         setSelectedProduction(updatedProduction);
       }
@@ -236,8 +244,8 @@ export default function ProductionsPage() {
       await mutate('/api/v1/productions');
 
       // Buscar produção atualizada para atualizar o estado local
-      const updatedProductions = await productionsApi.getProductions();
-      const updatedProduction = updatedProductions.find((p: Production) => p.id === selectedProduction.id);
+      const response: ProductionsResponse = await productionsApi.getProductions();
+      const updatedProduction = response.productionsList.find((p: Production) => p.id === selectedProduction.id);
       if (updatedProduction) {
         setSelectedProduction(updatedProduction);
       }
@@ -281,8 +289,8 @@ export default function ProductionsPage() {
       await mutate('/api/v1/productions');
 
       // Buscar produção atualizada para atualizar o estado local
-      const updatedProductions = await productionsApi.getProductions();
-      const updatedProduction = updatedProductions.find((p: Production) => p.id === selectedProduction.id);
+      const response: ProductionsResponse = await productionsApi.getProductions();
+      const updatedProduction = response.productionsList.find((p: Production) => p.id === selectedProduction.id);
       if (updatedProduction) {
         setSelectedProduction(updatedProduction);
       }
@@ -315,8 +323,8 @@ export default function ProductionsPage() {
       await mutate('/api/v1/productions');
 
       // Buscar produção atualizada para atualizar o estado local
-      const updatedProductions = await productionsApi.getProductions();
-      const updatedProduction = updatedProductions.find((p: Production) => p.id === selectedProduction.id);
+      const response: ProductionsResponse = await productionsApi.getProductions();
+      const updatedProduction = response.productionsList.find((p: Production) => p.id === selectedProduction.id);
       if (updatedProduction) {
         setSelectedProduction(updatedProduction);
       }
@@ -343,8 +351,8 @@ export default function ProductionsPage() {
       await mutate('/api/v1/productions');
 
       // Buscar produção atualizada para atualizar o estado local
-      const updatedProductions = await productionsApi.getProductions();
-      const updatedProduction = updatedProductions.find((p: Production) => p.id === selectedProduction.id);
+      const response: ProductionsResponse = await productionsApi.getProductions();
+      const updatedProduction = response.productionsList.find((p: Production) => p.id === selectedProduction.id);
       if (updatedProduction) {
         setSelectedProduction(updatedProduction);
       }
@@ -375,8 +383,8 @@ export default function ProductionsPage() {
       await mutate('/api/v1/productions');
 
       // Buscar produção atualizada para atualizar o estado local
-      const updatedProductions = await productionsApi.getProductions();
-      const updatedProduction = updatedProductions.find((p: Production) => p.id === selectedProduction.id);
+      const response: ProductionsResponse = await productionsApi.getProductions();
+      const updatedProduction = response.productionsList.find((p: Production) => p.id === selectedProduction.id);
       if (updatedProduction) {
         setSelectedProduction(updatedProduction);
       }
@@ -388,8 +396,10 @@ export default function ProductionsPage() {
 
   const fetchProductions = async () => {
     try {
-      const response = await productionsApi.getProductions();
-      setProductions(response);
+      const response: ProductionsResponse = await productionsApi.getProductions();
+      setProductions(response.productionsList || []);
+      // TODO: Implementar paginação no frontend quando necessário
+      // Por enquanto, apenas carregamos a primeira página (skip=0, limit=50)
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Erro ao carregar produções');
     } finally {
@@ -720,7 +730,7 @@ export default function ProductionsPage() {
 
                 <div className="flex items-center text-sm text-slate-400">
                   <DollarSign className="h-4 w-4 mr-2" />
-                  <span className={`transition-all duration-300 ${privacyMode ? 'blur-md pointer-events-none select-none' : ''}`}>
+                  <span className={`transition-all duration-700 ${privacyMode ? 'blur-md pointer-events-none select-none' : ''}`}>
                     {formatCurrency(production.total_value)}
                   </span>
                 </div>
@@ -728,7 +738,7 @@ export default function ProductionsPage() {
                 {production.profit !== 0 && (
                   <div className="flex items-center text-sm text-emerald-400">
                     <TrendingUp className="h-4 w-4 mr-2" />
-                    <span className={`transition-all duration-300 ${privacyMode ? 'blur-md pointer-events-none select-none' : ''}`}>
+                    <span className={`transition-all duration-700 ${privacyMode ? 'blur-md pointer-events-none select-none' : ''}`}>
                       {formatCurrency(production.profit)}
                     </span>
                   </div>

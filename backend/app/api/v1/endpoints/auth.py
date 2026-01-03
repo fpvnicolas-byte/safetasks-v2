@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
+# from app.core.rate_limit import limiter  # TODO: Enable when slowapi is installed
 from app.core.security import create_access_token, get_password_hash, verify_password
 from app.db.session import get_db
 from app.models.user import Organization, User
@@ -12,7 +13,9 @@ router = APIRouter()
 
 
 @router.post("/register-owner", response_model=UserResponse)
+# @limiter.limit("10/minute")  # Stricter limit for registration - TODO: Enable when slowapi is installed
 async def register_owner(
+    request: Request,
     user_data: UserCreate,
     db: AsyncSession = Depends(get_db)
 ) -> UserResponse:
@@ -50,7 +53,9 @@ async def register_owner(
 
 
 @router.post("/login", response_model=Token)
+# @limiter.limit("10/minute")  # Stricter limit to prevent brute force - TODO: Enable when slowapi is installed
 async def login(
+    request: Request,
     user_credentials: UserLogin,
     db: AsyncSession = Depends(get_db)
 ) -> Token:

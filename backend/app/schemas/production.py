@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 from app.core.utils import make_datetime_naive
 from app.models.production import ProductionStatus
@@ -34,11 +34,11 @@ class ProductionUpdate(BaseModel):
     deadline: Optional[datetime] = None
     shooting_sessions: Optional[List[dict]] = None
     priority: Optional[str] = None
-    subtotal: Optional[int] = None
-    total_cost: Optional[int] = None
-    total_value: Optional[int] = None
-    discount: Optional[int] = None
-    tax_rate: Optional[float] = None
+    subtotal: Optional[int] = Field(None, ge=0, description="Subtotal in cents, must be >= 0")
+    total_cost: Optional[int] = Field(None, ge=0, description="Total cost in cents, must be >= 0")
+    total_value: Optional[int] = Field(None, ge=0, description="Total value in cents, must be >= 0")
+    discount: Optional[int] = Field(None, ge=0, description="Discount in cents, must be >= 0")
+    tax_rate: Optional[float] = Field(None, ge=0, le=100, description="Tax rate as percentage (0-100)")
     payment_method: Optional[str] = None
     payment_status: Optional[str] = None
     due_date: Optional[datetime] = None
@@ -48,6 +48,14 @@ class ProductionUpdate(BaseModel):
     @classmethod
     def validate_dates(cls, v):
         return make_datetime_naive(v)
+    
+    @field_validator('tax_rate')
+    @classmethod
+    def validate_tax_rate_range(cls, v):
+        """Validate tax rate is within 0-100 range."""
+        if v is not None and (v < 0 or v > 100):
+            raise ValueError(f"Tax rate must be between 0 and 100, got {v}")
+        return v
 
 
 class ProductionResponse(BaseModel):

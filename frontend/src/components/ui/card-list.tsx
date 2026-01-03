@@ -31,18 +31,26 @@ export function CardListItem({
   onDelete,
   privacyMode = false
 }: CardListItemProps) {
+  // Mantém a formatação com ponto de milhar (ex: 1.000,00)
+  const formatBRL = (valueInCents: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(valueInCents / 100);
+  };
+
   return (
-    <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 hover:bg-slate-950/50 transition-all duration-300 group">
+    <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 hover:bg-slate-950/50 transition-all duration-300 group shadow-lg">
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
-          <h3 className="text-lg font-semibold text-slate-50 mb-1 group-hover:text-slate-100 transition-colors">
+          <h3 className="text-xl font-bold text-slate-50 mb-1 group-hover:text-blue-400 transition-colors tracking-tight">
             {title}
           </h3>
           {subtitle && (
-            <p className="text-sm text-slate-400 mb-2">{subtitle}</p>
+            <p className="text-sm font-medium text-slate-400 mb-2 uppercase tracking-wider">{subtitle}</p>
           )}
           {category && (
-            <span className="inline-block bg-slate-700 text-slate-300 text-xs px-2 py-1 rounded-full">
+            <span className="inline-block bg-blue-500/10 text-blue-300 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-blue-500/20">
               {category}
             </span>
           )}
@@ -51,10 +59,10 @@ export function CardListItem({
           {onEdit && (
             <button
               onClick={() => onEdit(id)}
-              className="p-2 text-slate-400 hover:text-slate-300 rounded-lg hover:bg-slate-800/50 transition-colors"
+              className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors"
               title="Editar"
             >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
             </button>
@@ -62,10 +70,10 @@ export function CardListItem({
           {onDelete && (
             <button
               onClick={() => onDelete(id)}
-              className="p-2 text-red-400 hover:text-red-300 rounded-lg hover:bg-red-800/50 transition-colors"
+              className="p-2 text-red-400/70 hover:text-red-400 rounded-lg hover:bg-red-500/10 transition-colors"
               title="Excluir"
             >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
             </button>
@@ -74,14 +82,17 @@ export function CardListItem({
       </div>
 
       {description && (
-        <p className="text-sm text-slate-400 mb-3">{description}</p>
+        <p className="text-sm text-slate-400/80 mb-6 leading-relaxed border-l-2 border-white/5 pl-3">{description}</p>
       )}
 
       {price !== undefined && (
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-slate-500">Preço base:</span>
-          <span className={`text-lg font-bold text-emerald-400 transition-all duration-300 ${privacyMode ? 'blur-md pointer-events-none select-none' : ''}`}>
-            R$ {(price / 100).toFixed(2).replace('.', ',')}
+        <div className="flex items-center justify-between pt-4 border-t border-white/5">
+          {/* AQUI ESTÁ A CORREÇÃO: Texto maior e em negrito */}
+          <span className="text-lg font-bold text-slate-200">Preço base:</span>
+          
+          {/* Valor base agora mais discreto em comparação ao label */}
+          <span className={`text-l font-bold text-emerald-400 tracking-tight transition-all duration-700 ${privacyMode ? 'blur-md grayscale pointer-events-none select-none' : ''}`}>
+            {formatBRL(price)}
           </span>
         </div>
       )}

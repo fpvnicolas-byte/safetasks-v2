@@ -52,10 +52,10 @@ export default function ProductionQuickView({
     switch (eventType) {
       case 'filming':
         return <Film className="h-5 w-5 text-blue-400" />;
-      case 'payment':
-        return <DollarSign className="h-5 w-5 text-yellow-400" />;
       case 'deadline':
-        return <Flag className="h-5 w-5 text-red-400" />;
+        return <Flag className="h-5 w-5 text-orange-400" />;
+      case 'payment':
+        return <DollarSign className="h-5 w-5 text-green-400" />;
       default:
         return null;
     }
@@ -65,10 +65,10 @@ export default function ProductionQuickView({
     switch (eventType) {
       case 'filming':
         return 'bg-blue-500/20 border-blue-500/50';
-      case 'payment':
-        return 'bg-yellow-500/20 border-yellow-500/50';
       case 'deadline':
-        return 'bg-red-500/20 border-red-500/50';
+        return 'bg-orange-500/20 border-orange-500/50';
+      case 'payment':
+        return 'bg-green-500/20 border-green-500/50';
       default:
         return 'bg-slate-500/20 border-slate-500/50';
     }
@@ -78,10 +78,10 @@ export default function ProductionQuickView({
     switch (eventType) {
       case 'filming':
         return 'Dia de Filmagem';
-      case 'payment':
-        return 'Data de Vencimento';
       case 'deadline':
-        return 'Prazo Final';
+        return 'Prazo de Entrega';
+      case 'payment':
+        return 'Dia de Pagamento';
       default:
         return 'Evento';
     }
@@ -187,7 +187,7 @@ export default function ProductionQuickView({
         return (
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <Flag className="h-4 w-4 text-red-400" />
+              <Flag className="h-4 w-4 text-orange-400" />
               <div>
                 <p className="text-sm font-medium text-slate-300">Prazo de Entrega</p>
                 <p className="text-sm text-slate-50">
@@ -229,7 +229,7 @@ export default function ProductionQuickView({
                 {production.title}
               </DialogTitle>
               <p className="text-sm text-slate-400 flex items-center gap-2 mt-1">
-                {getEventIcon()}
+                
                 {getEventTitle()} • {new Date(eventDate).toLocaleDateString('pt-BR')}
               </p>
             </div>
@@ -248,13 +248,13 @@ export default function ProductionQuickView({
           >
             Fechar
           </Button>
-          <Button
+          {/*<Button
             onClick={onEditComplete}
             className="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-50"
           >
             <ExternalLink className="h-4 w-4 mr-2" />
             Editar Completo
-          </Button>
+          </Button>*/}
         </div>
       </DialogContent>
     </Dialog>

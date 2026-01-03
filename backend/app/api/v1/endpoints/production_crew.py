@@ -1,3 +1,4 @@
+import logging
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -14,6 +15,7 @@ from app.models.user import User
 from app.schemas.production_crew import ProductionCrewCreate, ProductionCrewResponse
 from app.services.production_service import calculate_production_totals
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -81,6 +83,7 @@ async def add_crew_member(
 
     # Recalculate production totals (crew fees affect total_cost)
     await calculate_production_totals(production_id, db)
+    await db.commit()  # Commit the calculated totals
 
     # Return dict to avoid Pydantic validation issues with SQLAlchemy objects
     return {
@@ -132,7 +135,14 @@ async def get_production_crew(
             )
         )
         crew_members = result.scalars().all()
-        print(f"🔒 Crew Privacy Filter: Showing only 1 member (user_id {current_user.id}) out of total crew members")
+        logger.info(
+            "Crew privacy filter applied",
+            extra={
+                "production_id": production_id,
+                "user_id": current_user.id,
+                "crew_members_shown": len(crew_members)
+            }
+        )
 
     return [ProductionCrewResponse.from_orm(member) for member in crew_members]
 

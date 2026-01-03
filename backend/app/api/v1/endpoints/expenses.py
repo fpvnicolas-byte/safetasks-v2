@@ -49,6 +49,7 @@ async def create_expense(
 
     # Recalculate production totals (including profit)
     await calculate_production_totals(production_id, db)
+    await db.commit()  # Commit the calculated totals
 
     return ExpenseResponse.from_orm(expense)
 
@@ -81,5 +82,6 @@ async def delete_expense(
 
     # Recalculate production totals (including profit)
     await calculate_production_totals(production_id, db)
+    await db.commit()  # Commit the calculated totals
 
     return {"message": "Expense deleted successfully"}

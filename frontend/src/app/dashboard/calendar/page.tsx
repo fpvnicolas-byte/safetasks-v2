@@ -6,11 +6,13 @@ import { productionsApi } from '@/lib/api';
 import { useSWRConfig } from 'swr';
 import useSWR from 'swr';
 import ProductionQuickView from '@/components/calendar/ProductionQuickView';
+import { usePrivacy } from '../layout';
 
 // Full interface matching ProductionQuickView
 interface Production {
   id: number;
   title: string;
+  status: 'draft' | 'proposal_sent' | 'approved' | 'in_progress' | 'completed' | 'canceled';
   shooting_sessions: Array<{
     date: string;
     location: string;
@@ -37,7 +39,22 @@ export default function CalendarPage() {
   const [selectedEventDate, setSelectedEventDate] = useState<string | null>(null);
   const [quickViewOpen, setQuickViewOpen] = useState(false);
 
-  const { data: productions = [], error, isLoading } = useSWR('/api/v1/productions', productionsApi.getProductions);
+  const { data: productionsResponse, error, isLoading } = useSWR('/api/v1/productions?limit=200', () => productionsApi.getProductions(0, 200));
+  const productions = productionsResponse?.productionsList || [];
+  const { privacyMode } = usePrivacy();
+
+  const getEventColor = (eventType: string) => {
+    switch (eventType) {
+      case 'filming':
+        return 'bg-blue-500/30 text-blue-200 border border-blue-500/50';
+      case 'deadline':
+        return 'bg-orange-500/30 text-orange-200 border border-orange-500/50';
+      case 'payment':
+        return 'bg-green-500/30 text-green-200 border border-green-500/50';
+      default:
+        return 'bg-slate-500/30 text-slate-200 border border-slate-500/50';
+    }
+  };
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
@@ -282,9 +299,7 @@ export default function CalendarPage() {
                           key={`${event.production.id}-${event.type}`}
                           className={`
                             text-xs p-1 rounded cursor-pointer transition-all duration-200
-                            ${event.type === 'filming' ? 'bg-blue-500/30 text-blue-200 border border-blue-500/50' : ''}
-                            ${event.type === 'deadline' ? 'bg-red-500/30 text-red-200 border border-red-500/50' : ''}
-                            ${event.type === 'payment' ? 'bg-yellow-500/30 text-yellow-200 border border-yellow-500/50' : ''}
+                            ${getEventColor(event.type)}
                             hover:opacity-80
                           `}
                           title={`${event.production.title} - ${event.type === 'filming' ? 'Filmagem' : event.type === 'payment' ? 'Pagamento' : 'Prazo'}`}
@@ -294,7 +309,11 @@ export default function CalendarPage() {
                             {event.type === 'filming' && <Film className="h-3 w-3" />}
                             {event.type === 'payment' && <DollarSign className="h-3 w-3" />}
                             {event.type === 'deadline' && <Flag className="h-3 w-3" />}
-                            <span className="truncate">{event.production.title}</span>
+                            <span className={`truncate ${privacyMode ? 'blur-sm pointer-events-none select-none' : ''}`}>
+                              {event.type === 'filming' && event.production.shooting_sessions?.find(s => s.date === event.date)?.location ?
+                                `${event.production.title} (${event.production.shooting_sessions.find(s => s.date === event.date)?.location})` :
+                                event.production.title}
+                            </span>
                           </div>
                         </div>
                       ))}
@@ -308,7 +327,7 @@ export default function CalendarPage() {
 
         {/* Legend */}
         <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10">
-          <h3 className="text-lg font-semibold text-slate-50 mb-4">Legenda</h3>
+          <h3 className="text-lg font-semibold text-slate-50 mb-4">Legenda - Eventos do Calendário</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="flex items-center gap-3">
               <div className="w-4 h-4 bg-blue-500/30 border border-blue-500/50 rounded"></div>
@@ -319,18 +338,18 @@ export default function CalendarPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="w-4 h-4 bg-yellow-500/30 border border-yellow-500/50 rounded"></div>
+              <div className="w-4 h-4 bg-orange-500/30 border border-orange-500/50 rounded"></div>
               <div className="flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-yellow-400" />
-                <span className="text-sm text-slate-300">Datas de Vencimento</span>
+                <Flag className="h-4 w-4 text-orange-400" />
+                <span className="text-sm text-slate-300">Prazos de Entrega</span>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="w-4 h-4 bg-red-500/30 border border-red-500/50 rounded"></div>
+              <div className="w-4 h-4 bg-green-500/30 border border-green-500/50 rounded"></div>
               <div className="flex items-center gap-2">
-                <Flag className="h-4 w-4 text-red-400" />
-                <span className="text-sm text-slate-300">Prazos</span>
+                <DollarSign className="h-4 w-4 text-green-400" />
+                <span className="text-sm text-slate-300">Dias de Pagamento</span>
               </div>
             </div>
           </div>

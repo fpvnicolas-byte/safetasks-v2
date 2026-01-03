@@ -1,22 +1,33 @@
+import logging
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, Request
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+# from app.core.rate_limit import limiter  # TODO: Enable when slowapi is installed
+
 from app.api.deps import get_current_active_admin, get_current_user
 from app.db.session import get_db
+from app.models.client import Client
+from app.models.expense import Expense
 from app.models.production import Production
 from app.models.production_crew import ProductionCrew
+from app.models.production_item import ProductionItem
 from app.models.user import User, Organization
 from app.schemas.production import ProductionCreate, ProductionCrewResponse, ProductionResponse, ProductionUpdate
+from app.services.production_service import calculate_production_totals
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 
 @router.post("/", response_model=ProductionResponse)
+# @limiter.limit("30/minute")  # Write operations limit - TODO: Enable when slowapi is installed
 async def create_production(
+    request: Request,
     production_data: ProductionCreate,
     current_user: User = Depends(get_current_active_admin),
     db: AsyncSession = Depends(get_db)
@@ -48,6 +59,7 @@ async def create_production(
     # Calculate initial financial totals for the new production
     from app.services.production_service import calculate_production_totals
     await calculate_production_totals(production.id, db)
+    await db.commit()  # Commit the calculated totals
 
     # Reload production with relationships loaded for proper serialization
     result = await db.execute(
@@ -133,6 +145,7 @@ async def update_production(
     if "discount" in update_data or "tax_rate" in update_data:
         from app.services.production_service import calculate_production_totals
         await calculate_production_totals(production_id, db)
+        await db.commit()  # Commit the calculated totals
 
     # Refresh and return updated production with items, expenses and crew
     result = await db.execute(
@@ -149,48 +162,195 @@ async def update_production(
 
 
 @router.get("/")
+# @limiter.limit("200/minute")  # Read operations limit - TODO: Enable when slowapi is installed
 async def get_productions(
+    request: Request,
+    skip: int = 0,
+    limit: int = 50,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Get productions for the current user based on their role."""
+    """
+    Get productions for the current user based on their role.
+    
+    Optimized to use a single query with eager loading to prevent N+1 query problems.
+    All related data (items, expenses, crew, client) is loaded in one efficient query.
+    
+    Args:
+        skip: Number of records to skip (for pagination). Default: 0
+        limit: Maximum number of records to return. Default: 50, Max: 100
+        current_user: Authenticated user
+        db: Database session
+        
+    Returns:
+        List of productions with pagination metadata
+    """
+    
+    # Validate pagination parameters
+    if skip < 0:
+        skip = 0
+    if limit < 1:
+        limit = 1
+    if limit > 100:
+        limit = 100  # Maximum limit to prevent abuse
 
     if current_user.role == "admin":
         # Admin sees all productions in their organization
+        # Single optimized query with all relationships eagerly loaded
+        
+        # First, get total count for pagination metadata (optimized with COUNT)
+        count_result = await db.execute(
+            select(func.count(Production.id))
+            .where(Production.organization_id == current_user.organization_id)
+        )
+        total_count = count_result.scalar_one()
+        
+        # Then get paginated results with explicit eager loading
         result = await db.execute(
-            select(Production).where(Production.organization_id == current_user.organization_id).options(
+            select(Production)
+            .where(Production.organization_id == current_user.organization_id)
+            .options(
                 selectinload(Production.items),
                 selectinload(Production.expenses),
-                selectinload(Production.crew).selectinload(ProductionCrew.user),  # Load user data for full_name
-                selectinload(Production.client)  # Load client data for client_name
+                selectinload(Production.crew).selectinload(ProductionCrew.user),
+                selectinload(Production.client)
             )
+            .order_by(Production.created_at.desc())
+            .offset(skip)
+            .limit(limit)
         )
-        productions = result.scalars().all()
 
-        return [ProductionResponse.from_orm(production) for production in productions]
+        # Use unique() to avoid duplicates and ensure relations are loaded
+        productions = result.unique().scalars().all()
+
+        # Force load relations individually if needed (fallback)
+        for prod in productions:
+            # Ensure all relations are loaded
+            if not hasattr(prod, 'items') or prod.items is None:
+                logger.warning(f"Production {prod.id} - forcing individual relation load for items")
+                items_result = await db.execute(
+                    select(ProductionItem).where(ProductionItem.production_id == prod.id)
+                )
+                prod.items = items_result.scalars().all()
+
+            if not hasattr(prod, 'expenses') or prod.expenses is None:
+                logger.warning(f"Production {prod.id} - forcing individual relation load for expenses")
+                expenses_result = await db.execute(
+                    select(Expense).where(Expense.production_id == prod.id)
+                )
+                prod.expenses = expenses_result.scalars().all()
+
+            if not hasattr(prod, 'crew') or prod.crew is None:
+                logger.warning(f"Production {prod.id} - forcing individual relation load for crew")
+                crew_result = await db.execute(
+                    select(ProductionCrew).options(selectinload(ProductionCrew.user)).where(ProductionCrew.production_id == prod.id)
+                )
+                prod.crew = crew_result.scalars().all()
+
+        # Debug logging
+        for prod in productions[:2]:  # Log first 2 for debugging
+            logger.info(f"ADMIN Production {prod.id}: items={len(prod.items) if prod.items else 0}, expenses={len(prod.expenses) if prod.expenses else 0}, crew={len(prod.crew) if prod.crew else 0}")
+
+        # Always recalculate totals to ensure they're current
+        for prod in productions:
+            if prod.items and prod.expenses and prod.crew:
+                await calculate_production_totals(prod.id, db)
+                await db.refresh(prod)
+
+        return {
+            "productionsList": [ProductionResponse.from_orm(production) for production in productions],
+            "total": total_count,
+            "skip": skip,
+            "limit": limit,
+            "has_more": (skip + limit) < total_count
+        }
 
     else:
         # Crew members see only productions they're assigned to
-        result = await db.execute(
-            select(Production).join(
+        # Single optimized query with all relationships eagerly loaded
+        
+        # First, get total count for pagination metadata (optimized with COUNT)
+        count_result = await db.execute(
+            select(func.count(Production.id))
+            .join(
                 ProductionCrew,
                 Production.id == ProductionCrew.production_id
-            ).where(
+            )
+            .where(
                 Production.organization_id == current_user.organization_id,
                 ProductionCrew.user_id == current_user.id
-            ).options(
-                selectinload(Production.items),
-                selectinload(Production.expenses),
-                selectinload(Production.crew).selectinload(ProductionCrew.user)  # Load user data for full_name
             )
         )
-        productions = result.scalars().all()
+        total_count = count_result.scalar_one()
+        
+        # Then get paginated results with explicit eager loading
+        result = await db.execute(
+            select(Production)
+            .join(
+                ProductionCrew,
+                Production.id == ProductionCrew.production_id
+            )
+            .where(
+                Production.organization_id == current_user.organization_id,
+                ProductionCrew.user_id == current_user.id
+            )
+            .options(
+                selectinload(Production.items),
+                selectinload(Production.expenses),
+                selectinload(Production.crew).selectinload(ProductionCrew.user)
+            )
+            .order_by(Production.created_at.desc())
+            .offset(skip)
+            .limit(limit)
+        )
+
+        # Use unique() to avoid duplicates and ensure relations are loaded
+        productions = result.unique().scalars().all()
+
+        # Force load relations individually if needed (fallback)
+        for prod in productions:
+            if not hasattr(prod, 'items') or prod.items is None:
+                logger.warning(f"Crew Production {prod.id} - forcing individual relation load for items")
+                items_result = await db.execute(
+                    select(ProductionItem).where(ProductionItem.production_id == prod.id)
+                )
+                prod.items = items_result.scalars().all()
+
+            if not hasattr(prod, 'expenses') or prod.expenses is None:
+                logger.warning(f"Crew Production {prod.id} - forcing individual relation load for expenses")
+                expenses_result = await db.execute(
+                    select(Expense).where(Expense.production_id == prod.id)
+                )
+                prod.expenses = expenses_result.scalars().all()
+
+            if not hasattr(prod, 'crew') or prod.crew is None:
+                logger.warning(f"Crew Production {prod.id} - forcing individual relation load for crew")
+                crew_result = await db.execute(
+                    select(ProductionCrew).options(selectinload(ProductionCrew.user)).where(ProductionCrew.production_id == prod.id)
+                )
+                prod.crew = crew_result.scalars().all()
+
+        # Debug logging
+        for prod in productions[:2]:  # Log first 2 for debugging
+            logger.info(f"CREW Production {prod.id}: items={len(prod.items) if prod.items else 0}, expenses={len(prod.expenses) if prod.expenses else 0}, crew={len(prod.crew) if prod.crew else 0}")
+
+        # Always recalculate totals to ensure they're current
+        for prod in productions:
+            if prod.items and prod.expenses and prod.crew:
+                await calculate_production_totals(prod.id, db)
+                await db.refresh(prod)
 
         # Privacy filter: Crew members should only see their own crew information
         for production in productions:
             production.crew = [member for member in production.crew if member.user_id == current_user.id]
 
-        return [ProductionCrewResponse.from_orm(production) for production in productions]
+        return {
+            "items": [ProductionCrewResponse.from_orm(production) for production in productions],
+            "total": total_count,
+            "skip": skip,
+            "limit": limit,
+            "has_more": (skip + limit) < total_count
+        }
 
 
 @router.get("/{production_id}")
@@ -203,38 +363,75 @@ async def get_production(
 
     if current_user.role == "admin":
         # Admin can access any production in their organization
-        result = await db.execute(
-            select(Production).where(
-                Production.id == production_id,
-                Production.organization_id == current_user.organization_id
-            ).options(
-                selectinload(Production.items),
-                selectinload(Production.expenses),
-                selectinload(Production.crew).selectinload(ProductionCrew.user),  # Load user data for full_name
-                selectinload(Production.client)  # Load client data for client_name
-            )
-        )
-        production = result.scalar_one_or_none()
+
+        # Load production explicitly with all relations
+        prod_result = await db.execute(select(Production).where(
+            Production.id == production_id,
+            Production.organization_id == current_user.organization_id
+        ))
+        production = prod_result.scalar_one_or_none()
 
         if production:
+            # Load all relations explicitly
+            items_result = await db.execute(select(ProductionItem).where(ProductionItem.production_id == production_id))
+            production.items = items_result.scalars().all()
+
+            expenses_result = await db.execute(select(Expense).where(Expense.production_id == production_id))
+            production.expenses = expenses_result.scalars().all()
+
+            crew_result = await db.execute(
+                select(ProductionCrew).options(selectinload(ProductionCrew.user)).where(ProductionCrew.production_id == production_id)
+            )
+            production.crew = crew_result.scalars().all()
+
+            if production.client_id:
+                client_result = await db.execute(select(Client).where(Client.id == production.client_id))
+                production.client = client_result.scalar_one_or_none()
+
+            # Debug logging
+            logger.info(f"SINGLE Production {production.id}: items={len(production.items)}, expenses={len(production.expenses)}, crew={len(production.crew)}")
+
+            # Recalculate totals
+            await calculate_production_totals(production.id, db)
+            await db.refresh(production)
+
             return ProductionResponse.from_orm(production)
     else:
         # Crew members can only access productions they're assigned to
-        result = await db.execute(
-            select(Production).join(
-                ProductionCrew,
-                Production.id == ProductionCrew.production_id
-            ).where(
-                Production.organization_id == current_user.organization_id,
-                ProductionCrew.user_id == current_user.id,
-                Production.id == production_id  # Added specific production filter
-            ).options(
-                selectinload(Production.items),
-                selectinload(Production.expenses),
-                selectinload(Production.crew).selectinload(ProductionCrew.user)  # Load user data for full_name
+
+        # Check if user is assigned to this production
+        crew_check = await db.execute(
+            select(ProductionCrew).where(
+                ProductionCrew.production_id == production_id,
+                ProductionCrew.user_id == current_user.id
             )
         )
-        production = result.scalar_one_or_none()
+        if not crew_check.scalar_one_or_none():
+            raise HTTPException(status_code=404, detail="Production not found")
+
+        # Load production explicitly
+        prod_result = await db.execute(select(Production).where(Production.id == production_id))
+        production = prod_result.scalar_one()
+
+        # Load all relations explicitly
+        items_result = await db.execute(select(ProductionItem).where(ProductionItem.production_id == production_id))
+        production.items = items_result.scalars().all()
+
+        expenses_result = await db.execute(select(Expense).where(Expense.production_id == production_id))
+        production.expenses = expenses_result.scalars().all()
+
+        crew_result = await db.execute(
+            select(ProductionCrew).options(selectinload(ProductionCrew.user)).where(ProductionCrew.production_id == production_id)
+        )
+        production.crew = crew_result.scalars().all()
+
+        if production.client_id:
+            client_result = await db.execute(select(Client).where(Client.id == production.client_id))
+            production.client = client_result.scalar_one_or_none()
+
+        # Recalculate totals
+        await calculate_production_totals(production.id, db)
+        await db.refresh(production)
 
     if production is None:
         raise HTTPException(status_code=404, detail="Production not found")

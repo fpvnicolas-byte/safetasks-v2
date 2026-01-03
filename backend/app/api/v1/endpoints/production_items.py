@@ -94,6 +94,7 @@ async def create_production_item(
 
     # Recalculate production totals
     await calculate_production_totals(production_id, db)
+    await db.commit()  # Commit the calculated totals
 
     return ProductionItemResponse.from_orm(item)
 
@@ -126,5 +127,6 @@ async def delete_production_item(
 
     # Recalculate production totals
     await calculate_production_totals(production_id, db)
+    await db.commit()  # Commit the calculated totals
 
     return {"message": "Item deleted successfully"}

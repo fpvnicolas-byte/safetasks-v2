@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plus, Search, Package, Wrench } from 'lucide-react';
+import { Plus, Search, Package, Wrench, Coins } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -12,7 +12,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { servicesApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -24,12 +23,12 @@ import { toast } from 'sonner';
 import { CardList } from '@/components/ui/card-list';
 import { usePrivacy } from '../layout';
 
-// Interfaces baseadas nos schemas do backend
+// Interface com tipagem rigorosa
 interface Service {
   id: number;
   name: string;
   description: string | null;
-  default_price: number; // In cents
+  default_price: number; // Centavos vindos do backend
   unit: string | null;
   organization_id: number;
 }
@@ -37,7 +36,7 @@ interface Service {
 interface ServiceFormData {
   name: string;
   description: string;
-  default_price: string; // Will be converted to cents
+  default_price: string;
   unit: string;
 }
 
@@ -45,13 +44,12 @@ export default function ServicesPage() {
   const { privacyMode } = usePrivacy();
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>('');
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [serviceToDelete, setServiceToDelete] = useState<Service | null>(null);
   const { mutate } = useSWRConfig();
 
-  // Estado para formulários
   const [formData, setFormData] = useState<ServiceFormData>({
     name: '',
     description: '',
@@ -87,77 +85,30 @@ export default function ServicesPage() {
       const payload = {
         name: formData.name.trim(),
         description: formData.description.trim() || null,
-        default_price: Math.round(priceValue * 100), // Convert to cents
+        default_price: Math.round(priceValue * 100),
         unit: formData.unit.trim() || null,
       };
 
       await servicesApi.createService(payload);
-
-      // Limpar formulário e fechar modal
       setCreateModalOpen(false);
       resetForm();
-      await mutate('/api/v1/services');
       await fetchServices();
-
-      // Toast de sucesso
       toast.success("Serviço criado com sucesso!");
     } catch (err: any) {
-      console.error("Erro ao criar serviço:", err);
-
-      // Toast de erro para 400 Bad Request (mantém modal aberto)
-      if (err.response?.status === 400) {
-        toast.error("Dados inválidos ou serviço já existe");
-      } else {
-        toast.error("Erro ao criar serviço");
-      }
-    }
-  };
-
-  const handleDeleteService = async (serviceId: number) => {
-    const service = services.find(s => s.id === serviceId);
-    if (service) {
-      setServiceToDelete(service);
+      toast.error("Erro ao criar serviço");
     }
   };
 
   const confirmDeleteService = async () => {
     if (!serviceToDelete) return;
-
     try {
-      // Note: Backend doesn't have delete endpoint yet - placeholder
-      // Realizar exclusão via API
       await servicesApi.deleteService(serviceToDelete.id);
-
-      // Simular exclusão bem-sucedida para demonstração
       setServices(services.filter(s => s.id !== serviceToDelete.id));
-
-      // Atualizar cache
-      await mutate('/api/v1/services');
-
       toast.success("Serviço excluído com sucesso!");
     } catch (err: any) {
-      console.error("Erro ao excluir serviço:", err);
-
-      // Tratamento específico para restrição de chave estrangeira
-      if (err.response?.status === 400 && err.response?.data?.detail?.includes("used in productions")) {
-        toast.error("Não é possível excluir um serviço vinculado a uma produção");
-      } else if (err.response?.status === 404) {
-        toast.error("Serviço não encontrado");
-      } else {
-        // Tratamento específico para restrição de chave estrangeira
-      if (err.response?.status === 400 && err.response?.data?.detail?.includes("used in productions")) {
-        toast.error("Não é possível excluir um serviço vinculado a uma produção");
-      } else if (err.response?.status === 404) {
-        toast.error("Serviço não encontrado");
-      } else {
-        toast.error("Erro ao excluir serviço");
-      }
-      }
-      // Tratamento específico para restrição de chave estrangeira
-      if (err.response?.status === 400 && err.response?.data?.detail?.includes("used in productions")) {
-        toast.error("Não é possível excluir um serviço vinculado a uma produção");
-      } else if (err.response?.status === 404) {
-        toast.error("Serviço não encontrado");
+      const detail = err.response?.data?.detail || "";
+      if (detail.includes("used in productions")) {
+        toast.error("Não é possível excluir: serviço vinculado a uma produção");
       } else {
         toast.error("Erro ao excluir serviço");
       }
@@ -167,12 +118,7 @@ export default function ServicesPage() {
   };
 
   const resetForm = () => {
-    setFormData({
-      name: '',
-      description: '',
-      default_price: '',
-      unit: '',
-    });
+    setFormData({ name: '', description: '', default_price: '', unit: '' });
   };
 
   const filteredServices = services.filter(service =>
@@ -180,101 +126,62 @@ export default function ServicesPage() {
     service.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Prepare services for CardList component
+  // Mapeamento visual para o CardList
   const cardListItems = filteredServices.map(service => ({
     id: service.id,
     title: service.name,
-    subtitle: service.unit || undefined,
-    description: service.description || undefined,
-    price: service.default_price, // Will be formatted as R$ XX,XX
-    category: service.unit ? `Unidade: ${service.unit}` : undefined,
-    onDelete: handleDeleteService,
-    privacyMode, // Pass privacy mode to CardList
+    subtitle: service.unit ? `Faturamento por ${service.unit}` : 'Preço fixo',
+    description: service.description || 'Nenhuma descrição técnica informada',
+    price: service.default_price, // CardList deve tratar o Intl.NumberFormat
+    category: "Recurso Audiovisual",
+    icon: <Wrench className="h-5 w-5 text-blue-400" />,
+    onDelete: () => setServiceToDelete(service),
+    privacyMode,
   }));
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-400 mx-auto mb-4"></div>
-          <p className="text-slate-400">Carregando serviços...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <p className="text-red-400 mb-4">
-            Erro: {error}
-          </p>
-          <p className="text-sm text-slate-500">
-            Verifique se o backend está rodando em http://localhost:8000
-          </p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <div className="p-20 text-center animate-pulse text-slate-400">Sincronizando catálogo...</div>;
 
   return (
-    <div className="p-6 space-y-6 relative">
-      {/* Background effects */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-20 w-72 h-72 rounded-full bg-gradient-to-r from-blue-500/8 to-purple-500/8 blur-3xl animate-pulse" />
-        <div className="absolute bottom-32 right-32 w-96 h-96 rounded-full bg-gradient-to-r from-emerald-500/5 to-cyan-500/5 blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+    <div className="p-6 space-y-8 relative min-h-screen">
+      {/* Visual background cleanup */}
+      <div className="absolute inset-0 pointer-events-none opacity-20">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/10 blur-[120px] rounded-full" />
       </div>
 
       <div className="max-w-7xl mx-auto relative z-10">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
           <div>
-            <h1 className="text-3xl font-bold text-slate-50 mb-2">
-              Serviços
-            </h1>
-            <p className="text-slate-400">
-              Gerencie os serviços disponíveis para suas produções audiovisuais
-            </p>
+            <h1 className="text-4xl font-extrabold text-slate-50 tracking-tight">Catálogo de Serviços</h1>
+            <p className="text-slate-400 mt-2 text-lg">Defina preços base para suas propostas comerciais</p>
           </div>
-          <Button
-            onClick={() => setCreateModalOpen(true)}
-            className="bg-slate-800 hover:bg-slate-700 border border-slate-600"
+          <Button onClick={() => setCreateModalOpen(true)} 
+          className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all outline-none bg-slate-800 hover:bg-slate-700 border border-slate-600 text-primary-foreground h-9 px-4 py-2"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4" />
             Novo Serviço
           </Button>
         </div>
 
-        {/* Filters */}
-        <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 mb-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input
-                  placeholder="Buscar serviços..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-slate-900/50 border-slate-700"
-                />
-              </div>
-            </div>
-          </div>
+        {/* Search Bar */}
+        <div className="relative group max-w-md mb-12">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
+          <Input 
+            placeholder="Procurar serviço..." 
+            value={searchTerm} 
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-12 h-12 bg-white/5 border-white/10 rounded-2xl text-slate-50 placeholder:text-slate-600 focus:ring-2 focus:ring-blue-500/50 transition-all shadow-inner"
+          />
         </div>
 
-        {/* Services List - Using CardList Component */}
         <CardList
           items={cardListItems}
-          emptyMessage="Nenhum serviço cadastrado"
-          emptyIcon={<Package className="h-16 w-16" />}
+          emptyMessage="Seu catálogo está vazio"
           onAdd={() => setCreateModalOpen(true)}
-          addButtonText="Criar Primeiro Serviço"
         />
       </div>
 
-      {/* Create Service Modal */}
-      <Dialog open={createModalOpen} onOpenChange={setCreateModalOpen}>
+{/* Create Service Modal */}
+<Dialog open={createModalOpen} onOpenChange={setCreateModalOpen}>
         <DialogContent className="bg-slate-950/95 backdrop-blur-2xl border border-white/10 max-w-md">
           <DialogHeader>
             <DialogTitle className="text-slate-50 text-xl font-semibold">
@@ -317,13 +224,20 @@ export default function ServicesPage() {
               </label>
               <Input
                 type="number"
-                step="0.01"
-                min="0.01"
+                step="1" // Força o incremento de 1 em 1 real nas setinhas
+                min="1"  // Impede que o navegador aceite menos de 1 via setas
                 value={formData.default_price}
-                onChange={(e) => setFormData({ ...formData, default_price: e.target.value })}
-                placeholder="0.00"
-                className="bg-slate-900/50 border-slate-700 text-slate-50"
+                onChange={(e) => {
+                  const val = e.target.value;
+                  // Impede digitar valores negativos ou zero começando com "-" ou "0"
+                  if (val === "" || parseFloat(val) >= 1) {
+                    setFormData({ ...formData, default_price: val });
+                  }
+                }}
+                placeholder="1.00"
+                className="bg-slate-900/50 border-slate-700 text-slate-50 focus:border-slate-500"
               />
+              <p className="text-[10px] text-slate-500 mt-1 italic">Valor mínimo: R$ 1,00</p>
             </div>
 
             {/* Unidade */}
@@ -363,7 +277,7 @@ export default function ServicesPage() {
               <Button
                 onClick={handleCreateService}
                 disabled={!formData.name.trim() || !formData.default_price.trim()}
-                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
               >
                 Criar Serviço
               </Button>
@@ -372,28 +286,25 @@ export default function ServicesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete - Corrigido para AlertDialogContent */}
       <AlertDialog open={!!serviceToDelete} onOpenChange={() => setServiceToDelete(null)}>
-        <AlertDialogContent className="bg-slate-950/95 backdrop-blur-2xl border border-white/10">
+        <AlertDialogContent className="bg-slate-900 border-white/10 text-slate-50 rounded-3xl backdrop-blur-xl">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-slate-50 text-xl font-semibold">
-              Excluir Serviço
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-slate-400">
-              Tem certeza que deseja excluir o serviço <strong className="text-slate-50">"{serviceToDelete?.name}"</strong>?
-              <br />
-              Esta ação não pode ser desfeita e pode afetar produções que utilizam este serviço.
+            <AlertDialogTitle className="text-xl font-bold">Excluir Serviço?</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-400 text-base">
+              Você está prestes a remover <span className="text-white font-semibold">"{serviceToDelete?.name}"</span> do catálogo. 
+              Esta ação é irreversível.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="border-slate-600 text-slate-300 hover:bg-slate-800">
-              Cancelar
+          <AlertDialogFooter className="flex gap-3 mt-4">
+            <AlertDialogCancel className="bg-white/5 border-white/10 text-slate-300 hover:bg-white/10 hover:text-white rounded-xl">
+              Manter
             </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDeleteService}
-              className="bg-red-600 hover:bg-red-700 text-white"
+            <AlertDialogAction 
+              onClick={confirmDeleteService} 
+              className="bg-red-600 hover:bg-red-500 text-white font-semibold rounded-xl"
             >
-              Confirmar Exclusão
+              Excluir Permanentemente
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
