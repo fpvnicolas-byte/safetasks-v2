@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Edit, Search, Filter, Save, Calendar, Trash2, MapPin, CreditCard, DollarSign, TrendingUp, Users, Package, User, FileText, X } from 'lucide-react';
+import { Plus, MapPin, Users, Package, User, FileText, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { productionsApi, servicesApi, usersApi, clientsApi } from '@/lib/api';
@@ -10,12 +10,15 @@ import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
 import { useSWRConfig } from 'swr';
 import { toast } from 'sonner';
 import { usePrivacy } from '../layout';
+
+// Componentes refatorados
+import { ProductionHeader } from '@/components/productions/sections/ProductionHeader';
+import { ProductionFilters } from '@/components/productions/sections/ProductionFilters';
+import { ProductionEditSheet } from '@/components/productions/sections/ProductionEditSheet';
+import { ProductionGrid } from '@/components/productions/sections/ProductionGrid';
 
 // Interfaces baseadas nos schemas do backend
 interface ProductionCrewMember {
@@ -86,32 +89,7 @@ interface ProductionsResponse {
 
 type ProductionStatus = 'draft' | 'proposal_sent' | 'approved' | 'in_progress' | 'completed' | 'canceled';
 
-const statusLabels: Record<ProductionStatus, string> = {
-  draft: 'Rascunho',
-  proposal_sent: 'Proposta Enviada',
-  approved: 'Aprovada',
-  in_progress: 'Em Andamento',
-  completed: 'Concluída',
-  canceled: 'Cancelada',
-};
 
-const statusColors: Record<ProductionStatus, string> = {
-  draft: 'bg-gray-500',
-  proposal_sent: 'bg-yellow-500',
-  approved: 'bg-blue-500',
-  in_progress: 'bg-orange-500',
-  completed: 'bg-green-500',
-  canceled: 'bg-red-500',
-};
-
-const paymentMethodLabels: Record<string, string> = {
-  pix: 'PIX',
-  credit: 'Crédito',
-  debit: 'Débito',
-  link: 'Link',
-  crypto: 'Crypto',
-  boleto: 'Boleto',
-};
 
 export default function ProductionsPage() {
   const { privacyMode } = usePrivacy();
@@ -650,125 +628,50 @@ export default function ProductionsPage() {
 
       <div className="max-w-7xl mx-auto relative z-10">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-50 mb-2">
-              Produções
-            </h1>
-            <p className="text-slate-400">
-              Gerencie todas as suas produções audiovisuais
-            </p>
-          </div>
-          <Button
-            onClick={() => {
-              setCreateModalOpen(true);
-              fetchClients(); // Buscar clientes ao abrir modal
-            }}
-            className="bg-slate-800 hover:bg-slate-700 border border-slate-600"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Nova Produção
-          </Button>
-        </div>
+        <ProductionHeader
+          onCreateClick={() => {
+            setCreateModalOpen(true);
+            fetchClients(); // Buscar clientes ao abrir modal
+          }}
+        />
 
         {/* Filters */}
-        <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 mb-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input
-                  placeholder="Buscar produções..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-slate-900/50 border-slate-700"
-                />
-              </div>
-            </div>
-            <div className="sm:w-48">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="bg-slate-900/50 border-slate-700">
-                  <SelectValue placeholder="Todos os Status" />
-                </SelectTrigger>
-                <SelectContent className="bg-slate-900 border-slate-700">
-                  <SelectItem value="all">Todos os Status</SelectItem>
-                  <SelectItem value="draft">Rascunho</SelectItem>
-                  <SelectItem value="proposal_sent">Proposta Enviada</SelectItem>
-                  <SelectItem value="approved">Aprovada</SelectItem>
-                  <SelectItem value="in_progress">Em Andamento</SelectItem>
-                  <SelectItem value="completed">Concluída</SelectItem>
-                  <SelectItem value="canceled">Cancelada</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
+        <ProductionFilters
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          statusFilter={statusFilter}
+          onStatusChange={setStatusFilter}
+        />
 
-        {/* Productions Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProductions.map((production) => (
-            <div
-              key={production.id}
-              className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 hover:bg-slate-950/50 transition-all duration-300 cursor-pointer group"
-              onClick={() => handleEdit(production)}
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-slate-50 mb-2 group-hover:text-slate-100 transition-colors">
-                    {production.title}
-                  </h3>
-                  <Badge className={`${statusColors[production.status as ProductionStatus]} text-white`}>
-                    {statusLabels[production.status as ProductionStatus]}
-                  </Badge>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteProduction(production);
-                    }}
-                    className="h-8 w-8 p-0 text-slate-400 hover:text-red-400/80 opacity-0 group-hover:opacity-100 transition-all duration-200"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                  <Edit className="h-4 w-4 text-slate-400 group-hover:text-slate-300 transition-colors" />
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center text-sm text-slate-400">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  {production.deadline ? new Date(production.deadline).toLocaleDateString('pt-BR') : '--'}
-                </div>
-
-
-
-                <div className="flex items-center text-sm text-slate-400 font-semibold uppercase">
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  {production.payment_method ? paymentMethodLabels[production.payment_method] || production.payment_method : '--'}
-                </div>
-
-                <div className="flex items-center text-sm text-slate-400">
-                  <DollarSign className="h-4 w-4 mr-2" />
-                  <span className={`transition-all duration-700 ${privacyMode ? 'blur-md pointer-events-none select-none' : ''}`}>
-                    {formatCurrency(production.total_value)}
-                  </span>
-                </div>
-
-                {production.profit !== 0 && (
-                  <div className="flex items-center text-sm text-emerald-400">
-                    <TrendingUp className="h-4 w-4 mr-2" />
-                    <span className={`transition-all duration-700 ${privacyMode ? 'blur-md pointer-events-none select-none' : ''}`}>
-                      {formatCurrency(production.profit)}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+        {/* Production Grid */}
+        <ProductionGrid
+          productions={filteredProductions.map(p => ({
+            id: p.id,
+            title: p.title,
+            status: p.status,
+            deadline: p.deadline,
+            payment_method: p.payment_method,
+            total_value: p.total_value,
+            profit: p.profit
+          }))}
+          searchTerm={searchTerm}
+          statusFilter={statusFilter}
+          privacyMode={privacyMode}
+          onEdit={(production: any) => {
+            // Encontrar a produção completa na lista
+            const fullProduction = productions.find(p => p.id === production.id);
+            if (fullProduction) {
+              handleEdit(fullProduction);
+            }
+          }}
+          onDelete={(production: any) => {
+            // Encontrar a produção completa na lista
+            const fullProduction = productions.find(p => p.id === production.id);
+            if (fullProduction) {
+              handleDeleteProduction(fullProduction);
+            }
+          }}
+        />
 
         {filteredProductions.length === 0 && (
           <div className="text-center py-12">
@@ -782,838 +685,54 @@ export default function ProductionsPage() {
         )}
       </div>
 
-      {/* Edit Sheet */}
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent className="w-full sm:max-w-2xl bg-slate-950/95 backdrop-blur-2xl border-l border-white/10 [&>button]:hidden">
-          <SheetHeader className="border-b border-white/10 pb-4 relative">
-            <div className="flex items-center justify-between w-full pr-12">
-              <SheetTitle className="text-slate-50">
-                {selectedProduction?.title}
-              </SheetTitle>
-              <div className="flex items-center gap-4">
-                <Button
-                  onClick={handleSave}
-                  className="bg-emerald-600 hover:bg-emerald-700"
-                  disabled={!isEditing}
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  Salvar
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleCancel}
-                  className="border-slate-600 text-slate-300 hover:bg-slate-800"
-                >
-                  Cancelar
-                </Button>
-              </div>
-            </div>
-            <Button
-              variant="ghost"
-              onClick={() => setSheetOpen(false)}
-              className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary text-slate-400 hover:text-slate-300"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </SheetHeader>
+      {/* Production Edit Sheet */}
+      <ProductionEditSheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        selectedProduction={selectedProduction}
+        isEditing={isEditing}
+        onSave={handleSave}
+        onCancel={handleCancel}
+        editForm={editForm}
+        onEditFormChange={(updates) => setEditForm(prev => ({ ...prev, ...updates }))}
 
-          {selectedProduction && (
-            <div className="flex-1 overflow-y-auto max-h-[calc(100vh-200px)] pr-4">
-              <Tabs defaultValue="general" className="w-full">
-                <TabsList className="grid w-full grid-cols-5 bg-slate-900/50">
-                  <TabsTrigger value="general">Geral</TabsTrigger>
-                  <TabsTrigger value="financial">Financeiro</TabsTrigger>
-                  <TabsTrigger value="items">Itens</TabsTrigger>
-                  <TabsTrigger value="crew">Equipe</TabsTrigger>
-                  <TabsTrigger value="expenses">Despesas</TabsTrigger>
-                </TabsList>
+        // ItemsTab
+        services={services}
+        selectedService={selectedService}
+        newItemQuantity={newItemQuantity}
+        onServicesChange={setServices}
+        onSelectedServiceChange={setSelectedService}
+        onNewItemQuantityChange={setNewItemQuantity}
+        onFetchServices={fetchServices}
 
-                <TabsContent value="general" className="space-y-6 mt-6">
-                  <div className="grid grid-cols-1 gap-6">
-                    {/* Cliente */}
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-2">
-                        Cliente
-                      </label>
-                      <p className="text-slate-50">
-                        {selectedProduction.client?.full_name || 'Cliente não informado'}
-                      </p>
-                    </div>
+        // CrewTab
+        users={users}
+        selectedUser={selectedUser}
+        newCrewRole={newCrewRole}
+        newCrewFee={newCrewFee}
+        onUsersChange={setUsers}
+        onSelectedUserChange={setSelectedUser}
+        onNewCrewRoleChange={setNewCrewRole}
+        onNewCrewFeeChange={setNewCrewFee}
+        onFetchUsers={fetchUsers}
 
-                    {/* Título */}
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-2">
-                        Título
-                      </label>
-                      {isEditing ? (
-                        <Input
-                          value={editForm.title}
-                          onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                          className="bg-slate-900/50 border-slate-700"
-                        />
-                      ) : (
-                        <p className="text-slate-50">{selectedProduction.title}</p>
-                      )}
-                    </div>
+        // ExpensesTab
+        newExpenseName={newExpenseName}
+        newExpenseValue={newExpenseValue}
+        newExpenseCategory={newExpenseCategory}
+        onNewExpenseNameChange={setNewExpenseName}
+        onNewExpenseValueChange={setNewExpenseValue}
+        onNewExpenseCategoryChange={setNewExpenseCategory}
 
-                    {/* Status */}
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-2">
-                        Status
-                      </label>
-                      {isEditing ? (
-                        <Select
-                          value={editForm.status}
-                          onValueChange={(value) => setEditForm({ ...editForm, status: value as ProductionStatus })}
-                        >
-                          <SelectTrigger className="bg-slate-900/50 border-slate-700">
-                            <SelectValue placeholder="Selecione um status" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-slate-900 border-slate-700">
-                            <SelectItem value="draft">Rascunho</SelectItem>
-                            <SelectItem value="proposal_sent">Proposta Enviada</SelectItem>
-                            <SelectItem value="approved">Aprovada</SelectItem>
-                            <SelectItem value="in_progress">Em Andamento</SelectItem>
-                            <SelectItem value="completed">Concluída</SelectItem>
-                            <SelectItem value="canceled">Cancelada</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <Badge className={`${statusColors[selectedProduction.status as ProductionStatus]} text-white`}>
-                          {statusLabels[selectedProduction.status as ProductionStatus]}
-                        </Badge>
-                      )}
-                    </div>
+        // Shooting Sessions
+        onAddShootingSession={addShootingSession}
+        onRemoveShootingSession={removeShootingSession}
+        onUpdateShootingSessionDate={updateShootingSessionDate}
+        onUpdateShootingSessionLocation={updateShootingSessionLocation}
 
-                    {/* Deadline */}
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-2">
-                        Prazo
-                      </label>
-                      {isEditing ? (
-                        <Input
-                          type="date"
-                          value={editForm.deadline}
-                          onChange={(e) => setEditForm({ ...editForm, deadline: e.target.value })}
-                          className="bg-slate-900/50 border-slate-700"
-                        />
-                      ) : (
-                        <p className="text-slate-50">
-                          {selectedProduction.deadline ? new Date(selectedProduction.deadline).toLocaleDateString('pt-BR') : '--'}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Shooting Sessions - Campos Dinâmicos */}
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="block text-sm font-medium text-slate-300">
-                          Diárias de Filmagem
-                        </label>
-                        {isEditing && (
-                          <Button
-                            type="button"
-                            onClick={addShootingSession}
-                            variant="ghost"
-                            size="sm"
-                            className="text-slate-400 hover:text-slate-300"
-                          >
-                            <Plus className="h-4 w-4 mr-1" />
-                            Adicionar Diária
-                          </Button>
-                        )}
-                      </div>
-                      {isEditing ? (
-                        <div className="space-y-3">
-                          {editForm.shooting_sessions.map((session, index) => (
-                            <div key={index} className="bg-slate-800/50 rounded-lg p-3 space-y-2">
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium text-slate-300">
-                                  Diária {index + 1}
-                                </span>
-                                <Button
-                                  type="button"
-                                  onClick={() => removeShootingSession(index)}
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-red-400 hover:text-red-300 h-6 w-6 p-0"
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </div>
-                              <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                  <label className="block text-xs text-slate-400 mb-1">Data</label>
-                                  <Input
-                                    type="date"
-                                    value={session.date ?? ""}
-                                    onChange={(e) => updateShootingSessionDate(index, e.target.value)}
-                                    className="bg-slate-900/50 border-slate-700 text-xs"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-xs text-slate-400 mb-1">Local</label>
-                                  <Input
-                                    value={session.location ?? ""}
-                                    onChange={(e) => updateShootingSessionLocation(index, e.target.value)}
-                                    placeholder="Ex: Centro, Praia..."
-                                    className="bg-slate-900/50 border-slate-700 text-xs"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                          {editForm.shooting_sessions.length === 0 && (
-                            <p className="text-sm text-slate-500 italic text-center py-4">
-                              Nenhuma diária adicionada
-                            </p>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          {selectedProduction.shooting_sessions && selectedProduction.shooting_sessions.length > 0 ? (
-                            selectedProduction.shooting_sessions.map((session, index) => (
-                              <div key={index} className="bg-slate-800/30 rounded-lg p-3">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <Calendar className="h-4 w-4 text-blue-400" />
-                                    <span className="text-sm text-slate-50">
-                                      {session.date ? new Date(session.date).toLocaleDateString('pt-BR') : 'Data não definida'}
-                                    </span>
-                                  </div>
-                                  {session.location && (
-                                    <div className="flex items-center gap-2">
-                                      <MapPin className="h-4 w-4 text-slate-400" />
-                                      <span className="text-sm text-slate-300">{session.location}</span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            ))
-                          ) : (
-                            <p className="text-sm text-slate-500 italic text-center py-4">
-                              Nenhuma diária cadastrada
-                            </p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Payment Status */}
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-2">
-                        Status do Pagamento
-                      </label>
-                      {isEditing ? (
-                        <Select
-                          value={editForm.payment_status}
-                          onValueChange={(value) => setEditForm({ ...editForm, payment_status: value })}
-                        >
-                          <SelectTrigger className="bg-slate-900/50 border-slate-700">
-                            <SelectValue placeholder="Selecione o status" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-slate-900 border-slate-700">
-                            <SelectItem value="pending">Pendente</SelectItem>
-                            <SelectItem value="paid">Pago</SelectItem>
-                            <SelectItem value="partially_paid">Parcialmente Pago</SelectItem>
-                            <SelectItem value="overdue">Atrasado</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <p className="text-slate-50">--</p>
-                      )}
-                    </div>
-
-                    {/* Payment Method */}
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-2">
-                        Método de Pagamento
-                      </label>
-                      {isEditing ? (
-                        <Select
-                          value={editForm.payment_method}
-                          onValueChange={(value) => setEditForm({ ...editForm, payment_method: value })}
-                        >
-                          <SelectTrigger className="bg-slate-900/50 border-slate-700">
-                            <SelectValue placeholder="Selecione o método" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-slate-900 border-slate-700">
-                            <SelectItem value="pix">PIX</SelectItem>
-                            <SelectItem value="credit">Crédito</SelectItem>
-                            <SelectItem value="debit">Débito</SelectItem>
-                            <SelectItem value="link">Link</SelectItem>
-                            <SelectItem value="crypto">Crypto</SelectItem>
-                            <SelectItem value="boleto">Boleto</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <p className="text-slate-50">{selectedProduction.payment_method || '--'}</p>
-                      )}
-                    </div>
-
-                    {/* Due Date */}
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-2">
-                        Data de Vencimento
-                      </label>
-                      {isEditing ? (
-                        <Input
-                          type="date"
-                          value={editForm.due_date}
-                          onChange={(e) => setEditForm({ ...editForm, due_date: e.target.value })}
-                          className="bg-slate-900/50 border-slate-700"
-                        />
-                      ) : (
-                        <p className="text-slate-50">
-                          {selectedProduction.due_date ? new Date(selectedProduction.due_date).toLocaleDateString('pt-BR') : '--'}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Discount */}
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-2">
-                        Desconto (R$)
-                      </label>
-                      {isEditing ? (
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-sm">R$</span>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={editForm.discount}
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              const parsedValue = parseFloat(value);
-                              setEditForm({ ...editForm, discount: isNaN(parsedValue) ? 0 : parsedValue });
-                            }}
-                            onBlur={(e) => {
-                              if (editForm.discount < 0) {
-                                setEditForm({ ...editForm, discount: 0 });
-                              } else if (editForm.discount > 0 && editForm.discount < 1) {
-                                setEditForm({ ...editForm, discount: 1 });
-                              }
-                            }}
-                            className="bg-slate-900/50 border-slate-700 pl-8"
-                            placeholder="0.00"
-                          />
-                        </div>
-                      ) : (
-                        <p className="text-slate-50">
-                          {formatCurrency(selectedProduction.discount)}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Tax Rate */}
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-2">
-                        Taxa de Imposto (%)
-                      </label>
-                      {isEditing ? (
-                        <div className="relative">
-                          <Input
-                            type="number"
-                            step="1"
-                            min="0"
-                            max="100"
-                            value={editForm.tax_rate}
-                            onChange={(e) => {
-                              const value = e.target.value.replace(/\D/g, ""); // Remove any non-numeric characters
-                              const parsedValue = parseInt(value) || 0;
-                              setEditForm({ ...editForm, tax_rate: parsedValue });
-                            }}
-                            className="bg-slate-900/50 border-slate-700 pr-8"
-                            placeholder="0"
-                          />
-                          <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-sm">%</span>
-                        </div>
-                      ) : (
-                        <p className="text-slate-50">
-                          {selectedProduction.tax_rate}%
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="financial" className="space-y-6 mt-6">
-                  <div className="grid grid-cols-2 gap-4">
-                    {/* CARD: FATURAMENTO (Receita) - TOPO ESQUERDO */}
-                    <div className="bg-slate-900/40 rounded-xl p-6 border border-white/10">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center">
-                          <DollarSign className="h-6 w-6 text-emerald-400 mr-3" />
-                          <h3 className="text-sm font-medium text-emerald-300">Faturamento</h3>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <p className="text-2xl font-bold text-emerald-400">
-                          {formatCurrency(selectedProduction.subtotal)}
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          Receita bruta da produção
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* CARD: CUSTOS TOTAIS - TOPO DIREITO */}
-                    <div className="bg-slate-900/40 rounded-xl p-6 border border-white/10">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center">
-                          <Package className="h-6 w-6 text-red-400 mr-3" />
-                          <h3 className="text-sm font-medium text-red-300">Custos Totais</h3>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <p className="text-2xl font-bold text-red-400">
-                          {formatCurrency(selectedProduction.total_cost)}
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          Equipe: {formatCurrency(selectedProduction.crew?.reduce((total, member) => total + (member.fee || 0), 0) || 0)} +
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          Despesas: {formatCurrency(selectedProduction.expenses?.reduce((total, expense) => total + expense.value, 0) || 0)}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* CARD: IMPOSTOS - BAIXO ESQUERDO */}
-                    <div className="bg-slate-900/40 rounded-xl p-6 border border-white/10">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center">
-                          <FileText className="h-6 w-6 text-yellow-400 mr-3" />
-                          <h3 className="text-sm font-medium text-yellow-300">Impostos</h3>
-                        </div>
-                        <span className="text-xs bg-yellow-500/20 text-yellow-300 px-2 py-1 rounded-full">
-                          {selectedProduction.tax_rate}%
-                        </span>
-                      </div>
-                      <div className="space-y-2">
-                        <p className="text-2xl font-bold text-yellow-400">
-                          {formatCurrency(selectedProduction.tax_amount)}
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          Sobre {formatCurrency(selectedProduction.subtotal)}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* CARD: LUCRO LÍQUIDO - BAIXO DIREITO (DESTACADO) */}
-                    <div className="bg-linear-to-br from-blue-500/10 to-purple-500/10 rounded-xl p-6 border-2 border-blue-500/30">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center">
-                          <TrendingUp className="h-6 w-6 text-blue-400 mr-3" />
-                          <h3 className="text-sm font-medium text-blue-300">Lucro Líquido</h3>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <p className={`text-3xl font-bold ${selectedProduction.profit >= 0 ? 'text-blue-400' : 'text-red-400'}`}>
-                          {formatCurrency(selectedProduction.profit)}
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          Resultado final da produção
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* RESUMO EXECUTIVO */}
-                  <div className="bg-slate-900/20 rounded-xl p-4 border border-white/5">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-slate-400">Margem de Lucro:</span>
-                      <span className={`font-mono font-bold ${selectedProduction.profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {selectedProduction.subtotal > 0 ?
-                          `${((selectedProduction.profit / selectedProduction.subtotal) * 100).toFixed(1)}%` :
-                          '0%'
-                        }
-                      </span>
-                    </div>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="items" className="space-y-6 mt-6">
-                  {/* Formulário para adicionar itens */}
-                  <div className="bg-slate-900/50 rounded-xl p-4 border border-white/10">
-                    <h4 className="text-sm font-medium text-slate-50 mb-4">Adicionar Serviço</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <Select
-                          value={selectedService?.id ? selectedService.id.toString() : ''}
-                          onValueChange={(value) => {
-                            const service = services.find(s => s.id === parseInt(value));
-                            setSelectedService(service || null);
-                          }}
-                          onOpenChange={(open) => {
-                            if (open && services.length === 0) {
-                              fetchServices();
-                            }
-                          }}
-                        >
-                          <SelectTrigger className="bg-slate-900/50 border-slate-700 w-full">
-                            <SelectValue placeholder="Selecionar serviço" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-slate-900 border-slate-700">
-                            {services.length > 0 ? (
-                              services.map((service) => (
-                                <SelectItem key={service.id} value={service.id.toString()}>
-                                  {service.name} - {formatCurrency(service.default_price || 0)}
-                                </SelectItem>
-                              ))
-                            ) : (
-                              <div className="p-2 text-sm text-slate-400">
-                                Nenhum serviço cadastrado. Cadastre no menu lateral (em breve).
-                              </div>
-                            )}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Input
-                          type="number"
-                          min="1"
-                          value={newItemQuantity}
-                          onChange={(e) => setNewItemQuantity(parseInt(e.target.value) || 1)}
-                          onBlur={(e) => {
-                            const value = parseInt(e.target.value);
-                            if (isNaN(value) || value < 1) {
-                              setNewItemQuantity(1);
-                            }
-                          }}
-                          placeholder="Quantidade"
-                          className="bg-slate-900/50 border-slate-700"
-                        />
-                      </div>
-                      <div>
-                        <Button
-                          onClick={handleAddItem}
-                          disabled={!selectedService}
-                          className="w-full bg-emerald-600 hover:bg-emerald-700"
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Adicionar
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Lista de itens */}
-                  <div className="space-y-4">
-                    {selectedProduction.items && selectedProduction.items.length > 0 ? (
-                      selectedProduction.items.map((item) => (
-                        <div key={item.id} className="bg-white/5 rounded-xl p-4 border border-white/10">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center">
-                              <Package className="h-4 w-4 text-slate-400 mr-3" />
-                              <div>
-                                <h4 className="text-sm font-medium text-slate-50">{item.name}</h4>
-                                <p className="text-xs text-slate-400">
-                                  Quantidade: {item.quantity} × {formatCurrency(item.unit_price)}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <p className="text-sm font-mono font-bold text-slate-50">
-                                {formatCurrency(item.total_price)}
-                              </p>
-                              <Button
-                                onClick={() => handleRemoveItem(item.id)}
-                                variant="ghost"
-                                size="sm"
-                                className="text-red-400 hover:text-red-300"
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-center py-8">
-                        <Package className="h-12 w-12 text-slate-500 mx-auto mb-4" />
-                        <p className="text-slate-500">Nenhum item cadastrado</p>
-                      </div>
-                    )}
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="crew" className="space-y-6 mt-6">
-                  {/* Formulário para adicionar membros da equipe */}
-                  <div className="bg-slate-900/50 rounded-xl p-4 border border-white/10">
-                    <h4 className="text-sm font-medium text-slate-50 mb-4">Adicionar Membro da Equipe</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <Select
-                          value={selectedUser?.id ? selectedUser.id.toString() : ''}
-                          onValueChange={(value) => {
-                            const user = users.find(u => u.id === parseInt(value));
-                            setSelectedUser(user || null);
-                          }}
-                          onOpenChange={(open) => {
-                            if (open && users.length === 0) {
-                              fetchUsers();
-                            }
-                          }}
-                        >
-                          <SelectTrigger className="bg-slate-900/50 border-slate-700 h-10 min-h-[40px] px-3 py-2 text-left w-full flex items-center justify-between">
-                            <SelectValue placeholder="Selecionar usuário" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-slate-900 border-slate-700">
-                            {users.length > 0 ? (
-                              users.map((user) => (
-                                <SelectItem key={user.id} value={user.id.toString()}>
-                                  {user.full_name} ({user.email})
-                                </SelectItem>
-                              ))
-                            ) : (
-                              <div className="p-2 text-sm text-slate-400">
-                                Nenhum usuário cadastrado. Cadastre no menu lateral (em breve).
-                              </div>
-                            )}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Input
-                          value={newCrewRole}
-                          onChange={(e) => setNewCrewRole(e.target.value)}
-                          placeholder="Função (ex: Diretor, Cameraman)"
-                          className="bg-slate-900/50 border-slate-700"
-                        />
-                      </div>
-                      <div>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-sm">R$</span>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={newCrewFee}
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              const parsedValue = parseFloat(value);
-                              setNewCrewFee(isNaN(parsedValue) ? 0 : parsedValue);
-                            }}
-                            onBlur={(e) => {
-                              if (newCrewFee < 1) {
-                                setNewCrewFee(1);
-                              } else if (newCrewFee > 0 && newCrewFee < 1) {
-                                setNewCrewFee(1);
-                              }
-                            }}
-                            placeholder="0.00"
-                            className="bg-slate-900/50 border-slate-700 pl-8"
-                          />
-                        </div>
-                      </div>
-                      <div className="md:col-span-3">
-                        <Button
-                          onClick={handleAddCrewMember}
-                          disabled={!selectedUser || !newCrewRole.trim()}
-                          className="w-full bg-emerald-600 hover:bg-emerald-700"
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Adicionar Membro
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Lista de membros da equipe */}
-                  <div className="space-y-4">
-                    {selectedProduction.crew && selectedProduction.crew.length > 0 ? (
-                      <>
-                        {selectedProduction.crew.map((member, index) => (
-                          <div key={index} className="bg-white/5 rounded-xl p-4 border border-white/10">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center">
-                                <User className="h-4 w-4 text-slate-400 mr-3" />
-                                <div>
-                                  <h4 className="text-sm font-medium text-slate-50">
-                                    {member.full_name || 'Nome não informado'}
-                                  </h4>
-                                  <p className="text-xs text-slate-400">{member.role}</p>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                {member.fee && (
-                                  <p className="text-sm font-mono font-bold text-slate-50">
-                                    {formatCurrency(member.fee)}
-                                  </p>
-                                )}
-                                <Button
-                                  onClick={() => handleRemoveCrewMember(member.user_id)}
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-red-400 hover:text-red-300"
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-
-                        {/* Total da Equipe */}
-                        <div className="bg-slate-900/50 rounded-xl p-4 border border-white/10 mt-6">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center">
-                              <Users className="h-5 w-5 text-slate-400 mr-3" />
-                              <h4 className="text-sm font-medium text-slate-50">Total da Equipe</h4>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-lg font-mono font-bold text-slate-50">
-                                {formatCurrency(selectedProduction.crew.reduce((total, member) => total + (member.fee || 0), 0))}
-                              </p>
-                              <p className="text-xs text-slate-400">
-                                {selectedProduction.crew.length} membro{selectedProduction.crew.length !== 1 ? 's' : ''}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="text-center py-8">
-                        <Users className="h-12 w-12 text-slate-500 mx-auto mb-4" />
-                        <p className="text-slate-500">Nenhum membro da equipe cadastrado</p>
-                      </div>
-                    )}
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="expenses" className="space-y-6 mt-6">
-                  {/* Formulário para adicionar despesas */}
-                  <div className="bg-slate-900/50 rounded-xl p-4 border border-white/10">
-                    <h4 className="text-sm font-medium text-slate-50 mb-4">Adicionar Despesa</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <Input
-                          value={newExpenseName}
-                          onChange={(e) => setNewExpenseName(e.target.value)}
-                          placeholder="Nome da despesa"
-                          className="bg-slate-900/50 border-slate-700"
-                        />
-                      </div>
-                      <div>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-sm">R$</span>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={newExpenseValue}
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              const parsedValue = parseFloat(value);
-                              setNewExpenseValue(isNaN(parsedValue) ? 0 : parsedValue);
-                            }}
-                            onBlur={(e) => {
-                              if (newExpenseValue < 0) {
-                                setNewExpenseValue(0);
-                              } else if (newExpenseValue > 0 && newExpenseValue < 1) {
-                                setNewExpenseValue(1);
-                              }
-                            }}
-                            placeholder="0.00"
-                            className="bg-slate-900/50 border-slate-700 pl-8"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <Select
-                          value={newExpenseCategory}
-                          onValueChange={setNewExpenseCategory}
-                        >
-                          <SelectTrigger className="bg-slate-900/50 border-slate-700">
-                            <SelectValue placeholder="Categoria" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-slate-900 border-slate-700">
-                            <SelectItem value="Alimentação">Alimentação</SelectItem>
-                            <SelectItem value="Transporte">Transporte</SelectItem>
-                            <SelectItem value="Locação">Locação</SelectItem>
-                            <SelectItem value="Outros">Outros</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="md:col-span-3">
-                        <Button
-                          onClick={handleAddExpense}
-                          disabled={!newExpenseName.trim() || newExpenseValue <= 0}
-                          className="w-full bg-emerald-600 hover:bg-emerald-700"
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Adicionar Despesa
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Lista de despesas */}
-                  <div className="space-y-4">
-                    {selectedProduction.expenses && selectedProduction.expenses.length > 0 ? (
-                      <>
-                        {selectedProduction.expenses.map((expense) => (
-                          <div key={expense.id} className="bg-white/5 rounded-xl p-4 border border-white/10">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center">
-                                <FileText className="h-4 w-4 text-slate-400 mr-3" />
-                                <div>
-                                  <h4 className="text-sm font-medium text-slate-50">{expense.name}</h4>
-                                  <p className="text-xs text-slate-400">
-                                    Categoria: {expense.category || 'Não especificada'}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <p className="text-sm font-mono font-bold text-slate-50">
-                                  {formatCurrency(expense.value)}
-                                </p>
-                                <Button
-                                  onClick={() => handleRemoveExpense(expense.id)}
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-red-400 hover:text-red-300"
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-
-                        {/* Total das Despesas */}
-                        <div className="bg-slate-900/50 rounded-xl p-4 border border-white/10 mt-6">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center">
-                              <FileText className="h-5 w-5 text-slate-400 mr-3" />
-                              <h4 className="text-sm font-medium text-slate-50">Total das Despesas</h4>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-lg font-mono font-bold text-slate-50">
-                                {formatCurrency(selectedProduction.expenses.reduce((total, expense) => total + expense.value, 0))}
-                              </p>
-                              <p className="text-xs text-slate-400">
-                                {selectedProduction.expenses.length} despesa{selectedProduction.expenses.length !== 1 ? 's' : ''}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="text-center py-8">
-                        <FileText className="h-12 w-12 text-slate-500 mx-auto mb-4" />
-                        <p className="text-slate-500">Nenhuma despesa cadastrada</p>
-                      </div>
-                    )}
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </div>
-          )}
-        </SheetContent>
-      </Sheet>
-
+        // Update selectedProduction
+        onUpdateSelectedProduction={(production: any) => setSelectedProduction(production)}
+      />
       {/* Create Production Modal */}
       <Dialog open={createModalOpen} onOpenChange={setCreateModalOpen}>
         <DialogContent className="bg-slate-950/95 backdrop-blur-2xl border border-white/10 max-w-md">

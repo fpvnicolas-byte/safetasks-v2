@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# IA
+CORRECOES_*.md
+SPRINT*.md
+SOLUCAO_*.md
+RESUMO_*.md
+DEPLOY_*.md
+AUDITORIA_*.md
+BACKEND_GUIDE.md
