@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator  # type: ignore
 
 from app.core.utils import make_datetime_naive
 from app.models.production import ProductionStatus

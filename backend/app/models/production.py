@@ -1,7 +1,7 @@
 from enum import Enum
-from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String, JSON
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.sql import func
+from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String, JSON  # type: ignore
+from sqlalchemy.orm import Mapped, mapped_column, relationship  # type: ignore
+from sqlalchemy.sql import func  # type: ignore
 
 from app.db.base_class import Base
 

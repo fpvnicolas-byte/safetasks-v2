@@ -104,6 +104,15 @@ const statusColors: Record<ProductionStatus, string> = {
   canceled: 'bg-red-500',
 };
 
+const paymentMethodLabels: Record<string, string> = {
+  pix: 'PIX',
+  credit: 'Crédito',
+  debit: 'Débito',
+  link: 'Link',
+  crypto: 'Crypto',
+  boleto: 'Boleto',
+};
+
 export default function ProductionsPage() {
   const { privacyMode } = usePrivacy();
   const [productions, setProductions] = useState<Production[]>([]);
@@ -723,9 +732,9 @@ export default function ProductionsPage() {
 
 
 
-                <div className="flex items-center text-sm text-slate-400">
+                <div className="flex items-center text-sm text-slate-400 font-semibold uppercase">
                   <CreditCard className="h-4 w-4 mr-2" />
-                  {production.payment_method || '--'}
+                  {production.payment_method ? paymentMethodLabels[production.payment_method] || production.payment_method : '--'}
                 </div>
 
                 <div className="flex items-center text-sm text-slate-400">

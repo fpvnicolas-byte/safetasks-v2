@@ -1,7 +1,7 @@
 import logging
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy import select  # type: ignore
+from sqlalchemy.ext.asyncio import AsyncSession  # type: ignore
+from sqlalchemy.orm import selectinload  # type: ignore
 
 from app.models.expense import Expense
 from app.models.production import Production
@@ -35,10 +35,9 @@ async def calculate_production_totals(production_id: int, db: AsyncSession) -> N
     """
     
     # Work within existing transaction to ensure atomicity and prevent race conditions
-    # Clear session to avoid conflicts with recently deleted objects
+    # Note: Not expiring session to avoid conflicts with eagerly loaded objects
 
     logger.info(f"Starting calculation for production {production_id}")
-    db.expire_all()
 
     # Get all items for this production
     result = await db.execute(
