@@ -631,8 +631,21 @@ export default function ProductionsPage() {
     <div className="p-6 space-y-6 relative">
       {/* Background effects */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-20 w-72 h-72 rounded-full bg-gradient-to-r from-blue-500/8 to-purple-500/8 blur-3xl animate-pulse" />
-        <div className="absolute bottom-32 right-32 w-96 h-96 rounded-full bg-gradient-to-r from-emerald-500/5 to-cyan-500/5 blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div
+          className="absolute top-20 left-20 w-72 h-72 rounded-full bg-linear-to-r from-blue-500/8 to-purple-500/8 blur-3xl"
+          style={{
+            animation: 'smoothPulse 6s ease-in-out infinite',
+            willChange: 'opacity, transform'
+          }}
+        />
+        <div
+          className="absolute bottom-32 right-32 w-96 h-96 rounded-full bg-linear-to-r from-emerald-500/5 to-cyan-500/5 blur-3xl"
+          style={{
+            animation: 'smoothPulse 6s ease-in-out infinite',
+            animationDelay: '2s',
+            willChange: 'opacity, transform'
+          }}
+        />
       </div>
 
       <div className="max-w-7xl mx-auto relative z-10">
@@ -1188,7 +1201,7 @@ export default function ProductionsPage() {
                     </div>
 
                     {/* CARD: LUCRO LÍQUIDO - BAIXO DIREITO (DESTACADO) */}
-                    <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-xl p-6 border-2 border-blue-500/30">
+                    <div className="bg-linear-to-br from-blue-500/10 to-purple-500/10 rounded-xl p-6 border-2 border-blue-500/30">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center">
                           <TrendingUp className="h-6 w-6 text-blue-400 mr-3" />

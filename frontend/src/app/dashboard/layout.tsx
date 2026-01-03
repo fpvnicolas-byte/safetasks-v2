@@ -106,9 +106,29 @@ export default function DashboardLayout({
         </div>
 
         {/* Light orbs */}
-        <div className="absolute top-1/4 left-1/3 w-96 h-96 rounded-full bg-emerald-500/20 blur-[120px] -z-10 animate-pulse" />
-        <div className="absolute top-1/2 right-1/4 w-80 h-80 rounded-full bg-blue-500/15 blur-[100px] -z-10 animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute bottom-1/4 left-1/2 w-64 h-64 rounded-full bg-purple-500/10 blur-[80px] -z-10 animate-pulse" style={{ animationDelay: '2s' }} />
+        <div
+          className="absolute top-1/4 left-1/3 w-96 h-96 rounded-full bg-emerald-500/20 blur-[120px] -z-10"
+          style={{
+            animation: 'smoothPulse 6s ease-in-out infinite',
+            willChange: 'opacity, transform'
+          }}
+        />
+        <div
+          className="absolute top-1/2 right-1/4 w-80 h-80 rounded-full bg-blue-500/15 blur-[100px] -z-10"
+          style={{
+            animation: 'smoothPulse 6s ease-in-out infinite',
+            animationDelay: '2s',
+            willChange: 'opacity, transform'
+          }}
+        />
+        <div
+          className="absolute bottom-1/4 left-1/2 w-64 h-64 rounded-full bg-purple-500/10 blur-[80px] -z-10"
+          style={{
+            animation: 'smoothPulse 6s ease-in-out infinite',
+            animationDelay: '4s',
+            willChange: 'opacity, transform'
+          }}
+        />
 
         {/* Additional ambient lights */}
         <div className="absolute top-1/6 right-1/6 w-32 h-32 rounded-full bg-cyan-500/10 blur-[60px] -z-10" />
