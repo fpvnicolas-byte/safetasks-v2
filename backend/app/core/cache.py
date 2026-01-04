@@ -122,3 +122,4 @@ class CacheKeys:
 async def get_cache() -> Cache:
     """FastAPI dependency for cache"""
     return cache
+

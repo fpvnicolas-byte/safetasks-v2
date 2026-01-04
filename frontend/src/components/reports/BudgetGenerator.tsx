@@ -275,3 +275,4 @@ export const generateBudgetPDF = async (data: BudgetData): Promise<void> => {
 };
 
 export default { generateBudgetPDF };
+

@@ -209,3 +209,4 @@ class TestEdgeCases:
         # Should handle negative discount gracefully (resulting in higher total)
         await calculate_production_totals(1, mock_db)
         mock_db.commit.assert_called_once()
+

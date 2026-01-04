@@ -34,12 +34,13 @@ interface GeneralTabProps {
     title: string;
     status: ProductionStatus;
     deadline: string;
-    shooting_sessions: Array<{date: string | null, location: string | null}>;
+    shooting_sessions: Array<{ date: string | null, location: string | null }>;
     payment_status: string;
     payment_method: string;
     due_date: string;
     discount: number;
     tax_rate: number;
+    notes: string;
   };
   onEditFormChange: (updates: Partial<GeneralTabProps['editForm']>) => void;
   onAddShootingSession: () => void;
@@ -242,7 +243,6 @@ export function GeneralTab({
             <SelectContent className="bg-slate-900 border-slate-700">
               <SelectItem value="pending">Pendente</SelectItem>
               <SelectItem value="paid">Pago</SelectItem>
-              <SelectItem value="partially_paid">Parcialmente Pago</SelectItem>
               <SelectItem value="overdue">Atrasado</SelectItem>
             </SelectContent>
           </Select>
@@ -358,6 +358,27 @@ export function GeneralTab({
           </div>
         ) : (
           <p className="text-slate-50">{selectedProduction.tax_rate}%</p>
+        )}
+      </div>
+
+      {/* Notes */}
+      <div>
+        <label className="block text-sm font-medium text-slate-300 mb-2">
+          Observações
+        </label>
+        {isEditing ? (
+          <textarea
+            value={editForm.notes || ''}
+            onChange={(e) => onEditFormChange({ notes: e.target.value })}
+            className="w-full h-24 bg-slate-900/50 border border-slate-700 rounded-md px-3 py-2 text-slate-50 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent resize-none"
+            placeholder="Digite observações sobre esta produção..."
+          />
+        ) : (
+          <div className="min-h-24 bg-slate-800/30 rounded-md p-3">
+            <p className="text-slate-50 whitespace-pre-wrap">
+              {selectedProduction.notes || 'Nenhuma observação cadastrada'}
+            </p>
+          </div>
         )}
       </div>
 

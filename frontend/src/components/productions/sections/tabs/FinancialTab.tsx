@@ -106,3 +106,4 @@ export function FinancialTab({ selectedProduction, isEditing }: FinancialTabProp
     </div>
   );
 }
+

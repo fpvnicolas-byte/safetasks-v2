@@ -1,12 +1,26 @@
 'use client';
 
 import { Skeleton } from '@/components/ui/skeleton';
+import { useDesignTokens } from '@/lib/hooks/use-design-tokens';
 
 export function ProductionCardSkeleton() {
+  const { spacing, borderRadius, colors } = useDesignTokens();
+
   return (
-    <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10">
+    <div
+      className="backdrop-blur-2xl border"
+      style={{
+        backgroundColor: colors.glass.medium,
+        borderRadius: borderRadius.xl,
+        padding: spacing.xl,
+        borderColor: colors.glass.border,
+      }}
+    >
       {/* Header */}
-      <div className="flex items-start justify-between mb-4">
+      <div
+        className="flex items-start justify-between"
+        style={{ marginBottom: spacing.xl }}
+      >
         <div className="flex-1">
           {/* Title */}
           <Skeleton className="h-6 w-3/4 mb-2" />
@@ -20,7 +34,7 @@ export function ProductionCardSkeleton() {
       </div>
 
       {/* Content */}
-      <div className="space-y-3">
+      <div style={{ gap: spacing.md }} className="space-y-3">
         {/* Deadline */}
         <div className="flex items-center text-sm">
           <Skeleton className="h-4 w-4 mr-2" />

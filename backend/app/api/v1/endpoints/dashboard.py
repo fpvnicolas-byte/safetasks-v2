@@ -106,6 +106,33 @@ async def get_dashboard_summary(
             for item in status_data:
                 item['percentage'] = round((item['count'] / total_productions) * 100, 1)
 
+        # Get payments by status (NEW)
+        payments_result = await db.execute(
+            select(
+                Production.payment_status,
+                func.sum(Production.total_value).label('total_value'),
+                func.count(Production.id).label('count')
+            )
+            .where(Production.organization_id == current_user.organization_id)
+            .group_by(Production.payment_status)
+        )
+
+        # Process payment data
+        pending_payments = 0
+        received_payments = 0
+        overdue_payments = 0
+
+        for row in payments_result:
+            total_value = row.total_value or 0
+
+            if row.payment_status == "pending":
+                pending_payments += total_value
+            elif row.payment_status == "paid":
+                received_payments += total_value
+            elif row.payment_status == "overdue":
+                overdue_payments += total_value
+            # Note: "partial" payments will be treated as pending until paid_amount column is added
+
         # Get top 5 clients by total value
         clients_result = await db.execute(
             select(
@@ -129,11 +156,24 @@ async def get_dashboard_summary(
                 "productions_count": row.productions_count or 0
             })
 
-        # Add chart data to summary
+        # Calculate payment metrics
+        total_revenue_value = summary.get('total_revenue', 0)
+        payment_rate = (received_payments / total_revenue_value * 100) if total_revenue_value > 0 else 0
+        pending_rate = (pending_payments / total_revenue_value * 100) if total_revenue_value > 0 else 0
+        overdue_rate = (overdue_payments / total_revenue_value * 100) if total_revenue_value > 0 else 0
+
+        # Add chart data and payment data to summary
         summary.update({
             "monthly_revenue": monthly_data,
             "productions_by_status": status_data,
-            "top_clients": clients_data
+            "top_clients": clients_data,
+            # Payment data
+            "pending_payments": pending_payments,
+            "received_payments": received_payments,
+            "overdue_payments": overdue_payments,
+            "payment_rate": round(payment_rate, 1),
+            "pending_rate": round(pending_rate, 1),
+            "overdue_rate": round(overdue_rate, 1)
         })
 
         # Cache the result

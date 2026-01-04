@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { Toaster } from 'sonner';
 import { authApi } from '@/lib/api';
+import { useDesignTokens } from '@/lib/hooks/use-design-tokens';
+import { AccessibilityPanel } from '@/components/dev/accessibility-panel';
 
 interface User {
   id: number;
@@ -61,6 +63,19 @@ export default function DashboardLayout({
   const [privacyMode, setPrivacyMode] = useState(false);
   const pathname = usePathname();
 
+  // Design tokens para consistência visual
+  const {
+    colors,
+    spacing,
+    borderRadius,
+    shadows,
+    transitions,
+    glassEffect,
+    focusRing
+  } = useDesignTokens();
+
+  // Temporariamente removido skip links para resolver problemas de parsing
+
   // Define routes that should show the privacy toggle button (pages with financial data)
   const financialRoutes = ['/dashboard', '/dashboard/productions', '/dashboard/services'];
   const shouldShowPrivacyButton = financialRoutes.includes(pathname);
@@ -95,7 +110,30 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex relative overflow-hidden">
-      {/* Background Pattern and Light Effects */}
+      {/* Skip Links para acessibilidade */}
+      <a
+        href="#navigation"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-[100] px-4 py-2 rounded-md font-medium transition-all duration-200"
+        style={{
+          backgroundColor: colors.primary[500],
+          color: colors.slate[50],
+          fontFamily: 'Inter, system-ui, sans-serif',
+        }}
+      >
+        Pular para navegação
+      </a>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-32 z-[100] px-4 py-2 rounded-md font-medium transition-all duration-200"
+        style={{
+          backgroundColor: colors.primary[500],
+          color: colors.slate[50],
+          fontFamily: 'Inter, system-ui, sans-serif',
+        }}
+      >
+        Pular para conteúdo principal
+      </a>
+        {/* Background Pattern and Light Effects */}
       <div className="absolute inset-0 overflow-hidden">
         {/* Subtle dot pattern */}
         <div className="absolute inset-0 opacity-5">
@@ -136,38 +174,92 @@ export default function DashboardLayout({
       </div>
 
       {/* Sidebar */}
-      <div className="w-64 bg-slate-950/40 backdrop-blur-md border-r border-white/10 relative z-10">
+      <nav
+        className="w-64 relative z-10"
+        style={{
+          backgroundColor: colors.glass.dark,
+          backdropFilter: 'blur(12px)',
+          borderRight: `1px solid ${colors.glass.border}`,
+          boxShadow: shadows.glass.medium,
+        }}
+      >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center px-6 py-4 border-b border-white/10">
-            <Film className="h-8 w-8 text-slate-400" />
-            <span className="ml-2 text-xl font-bold text-slate-200">
+          <header
+            className="flex items-center px-6 py-4"
+            style={{
+              borderBottom: `1px solid ${colors.glass.border}`,
+            }}
+          >
+            <Film
+              className="h-8 w-8"
+              style={{ color: colors.slate[400] }}
+              aria-hidden="true"
+            />
+            <span
+              className="ml-2 text-xl font-bold"
+              style={{
+                color: colors.slate[200],
+                fontFamily: 'Inter, system-ui, sans-serif',
+              }}
+            >
               SafeTasks
             </span>
-          </div>
+          </header>
 
           {/* Navigation */}
-          <nav className="flex-1 px-4 py-6">
-            <ul className="space-y-2">
+          <nav id="navigation" className="flex-1 px-4 py-6">
+            <ul className="space-y-2" role="menubar">
               {navigation.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href;
 
                 return (
-                  <li key={item.name}>
+                  <li key={item.name} role="none">
                     <Link
                       href={item.href}
-                      className={`
-                        group flex items-center px-3 py-2 text-sm font-medium rounded-xl transition-all duration-200
-                        ${
-                          isActive
-                            ? 'bg-white/10 text-slate-50 shadow-lg'
-                            : 'text-slate-400 hover:text-slate-50 hover:bg-white/5'
+                      className="group flex items-center px-3 py-2 text-sm font-medium rounded-xl transition-all duration-200 focus:outline-none"
+                      style={{
+                        ...focusRing(colors.primary[500]),
+                        backgroundColor: isActive ? colors.glass.light : 'transparent',
+                        color: isActive ? colors.slate[50] : colors.slate[400],
+                        boxShadow: isActive ? shadows.glass.soft : 'none',
+                        transition: transitions.normal,
+                        borderRadius: borderRadius.xl,
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isActive) {
+                          e.currentTarget.style.backgroundColor = colors.glass.light;
+                          e.currentTarget.style.color = colors.slate[50];
                         }
-                      `}
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isActive) {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                          e.currentTarget.style.color = colors.slate[400];
+                        }
+                      }}
+                      aria-current={isActive ? 'page' : undefined}
+                      role="menuitem"
                     >
-                      <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
-                      {item.name}
+                      <Icon
+                        className="mr-3 h-5 w-5 flex-shrink-0"
+                        style={{
+                          color: isActive ? colors.slate[50] : colors.slate[400],
+                          transition: transitions.normal,
+                        }}
+                        aria-hidden="true"
+                      />
+                      <span
+                        style={{
+                          color: isActive ? colors.slate[50] : colors.slate[400],
+                          fontFamily: 'Inter, system-ui, sans-serif',
+                          fontWeight: '500',
+                          transition: transitions.normal,
+                        }}
+                      >
+                        {item.name}
+                      </span>
                     </Link>
                   </li>
                 );
@@ -176,64 +268,155 @@ export default function DashboardLayout({
           </nav>
 
           {/* User section */}
-          <div className="border-t border-white/10 p-4">
+          <div
+            className="p-4"
+            style={{
+              borderTop: `1px solid ${colors.glass.border}`,
+            }}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <div className="h-8 w-8 bg-white/10 rounded-full flex items-center justify-center">
-                  <span className="text-sm font-medium text-slate-300">
+                <div
+                  className="h-8 w-8 rounded-full flex items-center justify-center"
+                  style={{
+                    backgroundColor: colors.glass.light,
+                  }}
+                >
+                  <span
+                    className="text-sm font-medium"
+                    style={{
+                      color: colors.slate[300],
+                      fontFamily: 'Inter, system-ui, sans-serif',
+                    }}
+                  >
                     {user?.full_name?.charAt(0)?.toUpperCase() || 'U'}
                   </span>
                 </div>
                 <div className="ml-3">
-                  <p className="text-sm font-medium text-slate-200">
+                  <p
+                    className="text-sm font-medium"
+                    style={{
+                      color: colors.slate[200],
+                      fontFamily: 'Inter, system-ui, sans-serif',
+                    }}
+                  >
                     {user?.full_name || 'Usuário'}
                   </p>
-                  <p className="text-xs text-slate-400 capitalize">
+                  <p
+                    className="text-xs capitalize"
+                    style={{
+                      color: colors.slate[400],
+                      fontFamily: 'Inter, system-ui, sans-serif',
+                    }}
+                  >
                     {user?.role === 'admin' ? 'Administrador' : 'Colaborador'}
                   </p>
                 </div>
               </div>
               <button
                 onClick={handleLogout}
-                className="p-1 text-slate-400 hover:text-slate-200 transition-colors"
+                className="p-1 rounded transition-colors focus:outline-none"
+                style={{
+                  ...focusRing(colors.primary[500]),
+                  color: colors.slate[400],
+                  transition: transitions.normal,
+                  borderRadius: borderRadius.md,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = colors.slate[200];
+                  e.currentTarget.style.backgroundColor = colors.glass.light;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = colors.slate[400];
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
                 title="Sair"
+                aria-label="Fazer logout"
               >
-                <LogOut className="h-4 w-4" />
+                <LogOut className="h-4 w-4" aria-hidden="true" />
               </button>
             </div>
           </div>
         </div>
-      </div>
+      </nav>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <main id="main-content" className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="bg-slate-950/40 backdrop-blur-xl border-b border-white/10 px-6 py-4">
+        <header
+          className="px-6 py-4"
+          style={{
+            backgroundColor: colors.glass.medium,
+            backdropFilter: 'blur(12px)',
+            borderBottom: `1px solid ${colors.glass.border}`,
+            boxShadow: shadows.glass.soft,
+          }}
+        >
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-slate-200">
+              <h1
+                className="text-2xl font-bold"
+                style={{
+                  color: colors.slate[200],
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                }}
+              >
                 {navigation.find(item => item.href === pathname)?.name || 'Dashboard'}
               </h1>
-              <p className="text-sm text-slate-400 mt-1">
+              <p
+                className="text-sm mt-1"
+                style={{
+                  color: colors.slate[400],
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                }}
+              >
                 Bem-vindo de volta, {user?.full_name?.split(' ')[0] || 'usuário'}
               </p>
             </div>
             <div className="flex items-center space-x-4">
               {shouldShowPrivacyButton && (
-                <button
-                  onClick={() => setPrivacyMode(!privacyMode)}
-                  className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
-                  title={privacyMode ? 'Desativar modo privacidade' : 'Ativar modo privacidade'}
-                >
-                  {privacyMode ? (
-                    <EyeOff className="h-5 w-5 text-slate-400" />
-                  ) : (
-                    <Eye className="h-5 w-5 text-slate-400" />
-                  )}
-                </button>
+              <button
+                onClick={() => setPrivacyMode(!privacyMode)}
+                className="p-2 rounded-lg focus:outline-none"
+                style={{
+                  ...focusRing(colors.primary[500]),
+                  backgroundColor: colors.glass.light,
+                  transition: transitions.normal,
+                  borderRadius: borderRadius.lg,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = colors.glass.medium;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = colors.glass.light;
+                }}
+                title={privacyMode ? 'Desativar modo privacidade' : 'Ativar modo privacidade'}
+                aria-label={privacyMode ? 'Desativar modo privacidade' : 'Ativar modo privacidade'}
+                aria-pressed={privacyMode}
+              >
+                {privacyMode ? (
+                  <EyeOff
+                    className="h-5 w-5"
+                    style={{ color: colors.slate[400] }}
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <Eye
+                    className="h-5 w-5"
+                    style={{ color: colors.slate[400] }}
+                    aria-hidden="true"
+                  />
+                )}
+              </button>
               )}
               <div className="text-right">
-                <p className="text-sm text-slate-400">
+                <p
+                  className="text-sm"
+                  style={{
+                    color: colors.slate[400],
+                    fontFamily: 'Inter, system-ui, sans-serif',
+                  }}
+                >
                   {new Date().toLocaleDateString('pt-BR', {
                     weekday: 'long',
                     year: 'numeric',
@@ -248,9 +431,9 @@ export default function DashboardLayout({
 
         {/* Page content */}
         <PrivacyContext.Provider value={{ privacyMode, setPrivacyMode }}>
-          <main className="flex-1 overflow-auto">
+          <div className="flex-1 overflow-auto">
             {children}
-          </main>
+          </div>
         </PrivacyContext.Provider>
 
         {/* Toast Notifications */}
@@ -269,7 +452,10 @@ export default function DashboardLayout({
             className: 'border border-white/10',
           }}
         />
-      </div>
-    </div>
+
+      {/* Painel de Acessibilidade (apenas desenvolvimento) */}
+      <AccessibilityPanel />
+    </main>
+  </div>
   );
 }

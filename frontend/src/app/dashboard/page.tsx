@@ -5,6 +5,7 @@ import { TrendingUp, Receipt, DollarSign, Target, Package, BarChart3, PieChart a
 import { dashboardApi } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { usePrivacy } from './layout';
+import { useDesignTokens, useAccessibility } from '@/lib/hooks';
 import { DashboardCardSkeleton } from '@/components/ui/dashboard-card-skeleton';
 import { ChartSection } from '@/components/dashboard/ChartSection';
 
@@ -22,6 +23,13 @@ interface DashboardData {
   profit_margin?: number;
   avg_production_value?: number;
   completion_rate?: number;
+  // Payment fields
+  pending_payments?: number;
+  received_payments?: number;
+  overdue_payments?: number;
+  payment_rate?: number;
+  pending_rate?: number;
+  overdue_rate?: number;
 }
 
 export default function DashboardPage() {
@@ -30,6 +38,10 @@ export default function DashboardPage() {
   const [error, setError] = useState('');
   const [selectedPeriod, setSelectedPeriod] = useState<'current_month' | '3months' | '6months' | '12months' | 'year'>('current_month');
   const { privacyMode } = usePrivacy();
+
+  // Design tokens e acessibilidade
+  const { colors, spacing, borderRadius, shadows, transitions } = useDesignTokens();
+  const { accessibilityUtils } = useAccessibility();
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -273,19 +285,66 @@ export default function DashboardPage() {
         {/* KPI Cards - Enhanced */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-6 mb-8">
           {/* Revenue */}
-          <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 hover:bg-slate-950/50 transition-all duration-300 group shadow-2xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-slate-400">
+          <div
+            className="backdrop-blur-2xl hover:bg-slate-950/50 transition-all duration-300 group shadow-2xl focus-within:ring-2 focus-within:ring-slate-400"
+            style={{
+              backgroundColor: colors.glass.medium,
+              borderRadius: borderRadius.xl,
+              padding: spacing.xl,
+              borderColor: colors.glass.border,
+              boxShadow: shadows.xl,
+              transition: transitions.normal,
+            }}
+            role="region"
+            aria-labelledby="revenue-title"
+            tabIndex={0}
+          >
+            <div
+              className="flex items-center justify-between"
+              style={{ marginBottom: spacing.xl }}
+            >
+              <h3
+                id="revenue-title"
+                className="text-sm font-medium"
+                style={{ color: colors.slate[400] }}
+              >
                 Receita Total
               </h3>
-              <DollarSign className="h-5 w-5 text-slate-500 group-hover:text-emerald-400 transition-colors" />
+              <DollarSign
+                className="h-5 w-5 group-hover:text-emerald-400 transition-colors"
+                style={{
+                  color: colors.slate[500],
+                  transition: transitions.normal,
+                }}
+                aria-hidden="true"
+              />
             </div>
-            <p className={`text-xl font-mono font-bold text-emerald-400 transition-all duration-300 ${privacyMode ? 'blur-md select-none' : ''}`}>
+            <p
+              className={`font-mono font-bold transition-all duration-300 ${privacyMode ? 'blur-md select-none' : ''}`}
+              style={{
+                fontSize: '1.25rem',
+                color: colors.success[400],
+                transition: transitions.normal,
+              }}
+              aria-label={`Receita total: ${formatCurrency(data?.total_revenue || 0)}`}
+            >
               {formatCurrency(data?.total_revenue || 0)}
             </p>
-            <div className="flex items-center mt-2">
-              <TrendingUp className="h-4 w-4 text-emerald-400 mr-1" />
-              <span className="text-xs text-emerald-400">+12.5% vs mês anterior</span>
+            <div
+              className="flex items-center"
+              style={{ marginTop: spacing.sm }}
+            >
+              <TrendingUp
+                className="h-4 w-4 mr-1"
+                style={{ color: colors.success[400] }}
+                aria-hidden="true"
+              />
+              <span
+                className="text-xs"
+                style={{ color: colors.success[400] }}
+              >
+                +12.5% vs mês anterior
+              </span>
             </div>
           </div>
 
@@ -389,6 +448,63 @@ export default function DashboardPage() {
               <TrendingUp className="h-4 w-4 text-slate-400 mr-1" />
               <span className="text-xs text-slate-400">
                 Imposto médio: {formatCurrency(data?.total_productions ? (data.total_taxes || 0) / data.total_productions : 0)}
+              </span>
+            </div>
+          </div>
+
+          {/* Valores a Receber */}
+          <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 hover:bg-slate-950/50 transition-all duration-300 group shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-slate-400">
+                Valores Pendentes
+              </h3>
+              <TrendingUp className="h-5 w-5 text-slate-500 group-hover:text-orange-400 transition-colors" />
+            </div>
+            <p className={`text-xl font-mono font-bold text-orange-400 transition-all duration-300 ${privacyMode ? 'blur-md select-none' : ''}`}>
+              {formatCurrency((data?.pending_payments || 0) + (data?.overdue_payments || 0))}
+            </p>
+            <div className="flex items-center mt-2">
+              <Activity className="h-4 w-4 text-slate-400 mr-1" />
+              <span className="text-xs text-slate-400">
+                {data?.pending_rate ? `${data.pending_rate}% pendentes/vencidos` : '0% pendentes'}
+              </span>
+            </div>
+          </div>
+
+          {/* Valores Recebidos */}
+          <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 hover:bg-slate-950/50 transition-all duration-300 group shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-slate-400">
+                Valores Recebidos
+              </h3>
+              <DollarSign className="h-5 w-5 text-slate-500 group-hover:text-green-400 transition-colors" />
+            </div>
+            <p className={`text-xl font-mono font-bold text-green-400 transition-all duration-300 ${privacyMode ? 'blur-md select-none' : ''}`}>
+              {formatCurrency(data?.received_payments || 0)}
+            </p>
+            <div className="flex items-center mt-2">
+              <Target className="h-4 w-4 text-slate-400 mr-1" />
+              <span className="text-xs text-slate-400">
+                {data?.payment_rate ? `${data.payment_rate}% do total` : '0% do total'}
+              </span>
+            </div>
+          </div>
+
+          {/* Valores Vencidos */}
+          <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 hover:bg-slate-950/50 transition-all duration-300 group shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-slate-400">
+                Valores Vencidos
+              </h3>
+              <Receipt className="h-5 w-5 text-slate-500 group-hover:text-red-400 transition-colors" />
+            </div>
+            <p className={`text-xl font-mono font-bold text-red-400 transition-all duration-300 ${privacyMode ? 'blur-md select-none' : ''}`}>
+              {formatCurrency(data?.overdue_payments || 0)}
+            </p>
+            <div className="flex items-center mt-2">
+              <BarChart3 className="h-4 w-4 text-slate-400 mr-1" />
+              <span className="text-xs text-slate-400">
+                {data?.overdue_rate ? `${data.overdue_rate}% do total` : '0% do total'}
               </span>
             </div>
           </div>

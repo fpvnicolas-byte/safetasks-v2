@@ -138,11 +138,12 @@ async def update_production(
     # Check which fields are in the model vs schema
     model_fields = ['title', 'client_id', 'status', 'deadline', 'priority', 'shooting_sessions',
                    'subtotal', 'total_cost', 'total_value', 'discount', 'tax_rate',
-                   'payment_method', 'payment_status', 'due_date']
+                   'payment_method', 'payment_status', 'due_date', 'notes']
 
     for field, value in update_data.items():
         # Handle empty strings as None for nullable fields
         if value == "" and field in ['shooting_sessions', 'payment_method']:
+            value = None
             value = None
         setattr(production, field, value)
 

@@ -142,6 +142,7 @@ export default function ProductionsTestPage() {
     due_date: string;
     discount: number;
     tax_rate: number;
+    notes: string;
   }>({
     title: '',
     status: 'draft' as ProductionStatus,
@@ -152,6 +153,7 @@ export default function ProductionsTestPage() {
     due_date: '',
     discount: 0,
     tax_rate: 0,
+    notes: '',
   });
 
   useEffect(() => {
@@ -228,6 +230,7 @@ export default function ProductionsTestPage() {
       due_date: fullProduction.due_date ? new Date(fullProduction.due_date).toISOString().split('T')[0] : '',
       discount: fullProduction.discount ? fullProduction.discount / 100 : 0, // Converter centavos para reais
       tax_rate: fullProduction.tax_rate,
+      notes: fullProduction.notes || '',
     });
     setIsEditing(true); // Ativar modo de edição
     setSheetOpen(true);
@@ -324,6 +327,7 @@ export default function ProductionsTestPage() {
         due_date: editForm.due_date ? new Date(editForm.due_date).toISOString() : null,
         discount: Math.round(editForm.discount * 100), // Converter para centavos
         tax_rate: editForm.tax_rate,
+        notes: editForm.notes || null,
       };
 
       await productionsApi.updateProduction(selectedProduction.id, payload);
@@ -460,6 +464,42 @@ export default function ProductionsTestPage() {
           privacyMode={privacyMode}
           onEdit={handleEdit}
           onDelete={handleDeleteProduction}
+          onDownloadBudget={async (production) => {
+            try {
+              toast.loading('Gerando orçamento...', { id: 'budget-generation' });
+
+              const productionData = await productionsApi.getProduction(production.id);
+              const budgetData = {
+                client: productionData.client || {
+                  full_name: 'Cliente não informado',
+                  email: '',
+                  cnpj: '',
+                  phone: '',
+                  address: ''
+                },
+                production: {
+                  id: productionData.id,
+                  title: productionData.title || 'Produção sem título',
+                  status: productionData.status || 'draft',
+                  created_at: productionData.created_at,
+                  deadline: productionData.deadline
+                },
+                items: productionData.items || [],
+                services: productionData.services || [],
+                total: productionData.total_value || 0,
+                discount: productionData.discount || 0,
+                tax: productionData.tax_amount || 0
+              };
+
+              const { generateBudgetPDF } = await import('@/components/reports/BudgetGenerator');
+              await generateBudgetPDF(budgetData);
+
+              toast.success('Orçamento gerado com sucesso!', { id: 'budget-generation' });
+            } catch (error: any) {
+              toast.error('Erro ao gerar orçamento', { id: 'budget-generation' });
+              console.error('Erro ao gerar orçamento:', error);
+            }
+          }}
         />
 
         {filteredProductions.length === 0 && (

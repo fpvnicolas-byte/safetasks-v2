@@ -6,6 +6,16 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Film, DollarSign, Flag, MapPin, Users, Calendar, Clock, ExternalLink } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
+import { useDesignTokens } from '@/lib/hooks/use-design-tokens';
+
+const paymentMethodLabels: Record<string, string> = {
+  pix: 'PIX',
+  credit: 'Crédito',
+  debit: 'Débito',
+  link: 'Link',
+  crypto: 'Crypto',
+  boleto: 'Boleto',
+};
 
 interface Production {
   id: number;
@@ -46,6 +56,8 @@ export default function ProductionQuickView({
   onClose,
   onEditComplete,
 }: ProductionQuickViewProps) {
+  const { colors, spacing, borderRadius, shadows, transitions, glassEffect } = useDesignTokens();
+
   if (!production || !eventType || !eventDate) return null;
 
   const getEventIcon = () => {
@@ -161,22 +173,21 @@ export default function ProductionQuickView({
               <div>
                 <p className="text-sm font-medium text-slate-300 mb-1">Método</p>
                 <Badge variant="outline" className="text-xs">
-                  {production.payment_method || 'Não especificado'}
+                  {production.payment_method ? paymentMethodLabels[production.payment_method] || production.payment_method : 'Não especificado'}
                 </Badge>
               </div>
               <div>
                 <p className="text-sm font-medium text-slate-300 mb-1">Status</p>
                 <Badge
                   variant={production.payment_status === 'paid' ? 'default' : 'secondary'}
-                  className={`text-xs ${
-                    production.payment_status === 'paid'
-                      ? 'bg-emerald-500/20 text-emerald-300'
-                      : 'bg-yellow-500/20 text-yellow-300'
-                  }`}
+                  className={`text-xs ${production.payment_status === 'paid'
+                    ? 'bg-emerald-500/20 text-emerald-300'
+                    : 'bg-yellow-500/20 text-yellow-300'
+                    }`}
                 >
                   {production.payment_status === 'paid' ? 'Pago' :
-                   production.payment_status === 'pending' ? 'Pendente' :
-                   production.payment_status === 'partially_paid' ? 'Parcial' : 'Atrasado'}
+                    production.payment_status === 'pending' ? 'Pendente' :
+                      production.payment_status === 'partially_paid' ? 'Parcial' : 'Atrasado'}
                 </Badge>
               </div>
             </div>
@@ -218,18 +229,53 @@ export default function ProductionQuickView({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-slate-950/95 backdrop-blur-2xl border border-white/10 max-w-md">
-        <DialogHeader className="border-b border-white/10 pb-4">
+      <DialogContent
+        className="max-w-md"
+        style={{
+          backgroundColor: colors.glass.dark,
+          backdropFilter: 'blur(12px)',
+          border: `1px solid ${colors.glass.border}`,
+          borderRadius: borderRadius.xl,
+          boxShadow: shadows.glass.strong,
+        }}
+      >
+        <DialogHeader
+          className="pb-4"
+          style={{
+            borderBottom: `1px solid ${colors.glass.border}`,
+          }}
+        >
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg ${getEventColor()}`}>
+            <div
+              className="p-2 rounded-lg"
+              style={{
+                backgroundColor: getEventColor().includes('blue') ? colors.glass.light :
+                  getEventColor().includes('orange') ? colors.warning[500] + '20' :
+                    colors.success[500] + '20',
+                border: `1px solid ${getEventColor().includes('blue') ? colors.primary[500] + '50' :
+                  getEventColor().includes('orange') ? colors.warning[500] + '50' :
+                    colors.success[500] + '50'}`,
+              }}
+            >
               {getEventIcon()}
             </div>
             <div>
-              <DialogTitle className="text-slate-50 text-lg">
+              <DialogTitle
+                className="text-lg"
+                style={{
+                  color: colors.slate[50],
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                }}
+              >
                 {production.title}
               </DialogTitle>
-              <p className="text-sm text-slate-400 flex items-center gap-2 mt-1">
-                
+              <p
+                className="text-sm flex items-center gap-2 mt-1"
+                style={{
+                  color: colors.slate[400],
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                }}
+              >
                 {getEventTitle()} • {new Date(eventDate).toLocaleDateString('pt-BR')}
               </p>
             </div>

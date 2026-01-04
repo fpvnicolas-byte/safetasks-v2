@@ -8,3 +8,4 @@ export const generateBudgetPDF = async (data: any) => {
   const { generateBudgetPDF: lazyGenerateBudgetPDF } = await import('./BudgetGenerator');
   return lazyGenerateBudgetPDF(data);
 };
+
