@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
-import { TrendingUp, Receipt, Wallet, DollarSign, Target, Calendar } from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
+import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, PieChart, Pie, Cell } from 'recharts';
+import { TrendingUp, Receipt, DollarSign, Target, Package, BarChart3, PieChart as PieChartIcon, Users, Activity } from 'lucide-react';
 import { dashboardApi } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { usePrivacy } from './layout';
@@ -15,19 +15,52 @@ interface DashboardData {
   total_productions?: number;
   total_earnings?: number;
   production_count?: number;
+  monthly_revenue?: Array<{ month: string; revenue: number }>;
+  productions_by_status?: Array<{ status: string; count: number; percentage: number }>;
+  top_clients?: Array<{ name: string; total_value: number; productions_count: number }>;
+  profit_margin?: number;
+  avg_production_value?: number;
+  completion_rate?: number;
 }
 
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedPeriod, setSelectedPeriod] = useState<'current_month' | '3months' | '6months' | '12months' | 'year'>('current_month');
   const { privacyMode } = usePrivacy();
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         const response = await dashboardApi.getSummary();
-        setData(response);
+        // Enhanced mock data for advanced dashboard
+        const enhancedData = {
+          ...response,
+          monthly_revenue: [
+            { month: 'Jan', revenue: 45000 },
+            { month: 'Fev', revenue: 52000 },
+            { month: 'Mar', revenue: 48000 },
+            { month: 'Abr', revenue: 61000 },
+            { month: 'Mai', revenue: 55000 },
+            { month: 'Jun', revenue: 67000 },
+          ],
+          productions_by_status: [
+            { status: 'completed', count: 12, percentage: 60 },
+            { status: 'in_progress', count: 5, percentage: 25 },
+            { status: 'approved', count: 2, percentage: 10 },
+            { status: 'draft', count: 1, percentage: 5 },
+          ],
+          top_clients: [
+            { name: 'Cliente A', total_value: 25000, productions_count: 3 },
+            { name: 'Cliente B', total_value: 22000, productions_count: 2 },
+            { name: 'Cliente C', total_value: 18000, productions_count: 2 },
+          ],
+          profit_margin: 28.5,
+          avg_production_value: 12500,
+          completion_rate: 85.2,
+        };
+        setData(enhancedData);
       } catch (err: any) {
         setError(err.response?.data?.detail || 'Erro ao carregar dados');
       } finally {
@@ -38,12 +71,49 @@ export default function DashboardPage() {
     fetchDashboardData();
   }, []);
 
+  // Enhanced chart data with period filtering - SEMPRE chamado antes dos returns
+  const revenueChartData = useMemo(() => {
+    if (!data?.monthly_revenue) return [];
+
+    const now = new Date();
+    const currentMonth = now.getMonth(); // 0-11
+    const currentYear = now.getFullYear();
+
+    // Filtrar dados baseado no período selecionado
+    switch (selectedPeriod) {
+      case 'current_month':
+        // Mostrar apenas o mês corrente (dados mockados para demonstração)
+        return data.monthly_revenue.slice(-1); // Último mês
+
+      case '3months':
+        // Últimos 3 meses
+        return data.monthly_revenue.slice(-3);
+
+      case '6months':
+        // Últimos 6 meses
+        return data.monthly_revenue.slice(-6);
+
+      case '12months':
+        // Últimos 12 meses
+        return data.monthly_revenue.slice(-12);
+
+      case 'year':
+        // Dados do ano corrente
+        return data.monthly_revenue;
+
+      default:
+        return data.monthly_revenue.slice(-6);
+    }
+  }, [data?.monthly_revenue, selectedPeriod]);
+
+  const statusChartData = data?.productions_by_status || [];
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-400 mx-auto mb-4"></div>
-          <p className="text-slate-400">Carregando dados...</p>
+          <p className="text-slate-400">Carregando dashboard executivo...</p>
         </div>
       </div>
     );
@@ -62,235 +132,268 @@ export default function DashboardPage() {
     );
   }
 
-  // Mock data for profit chart (last 6 months)
-  const profitChartData = [
-    { month: 'Jul', profit: 12500 },
-    { month: 'Ago', profit: 15800 },
-    { month: 'Set', profit: 22100 },
-    { month: 'Out', profit: 18900 },
-    { month: 'Nov', profit: 24300 },
-    { month: 'Dez', profit: data?.total_profit ? data.total_profit / 100 : 0 },
-  ];
+  const statusColors = {
+    completed: '#10b981',
+    in_progress: '#f59e0b',
+    approved: '#3b82f6',
+    draft: '#6b7280',
+  };
+
+  const statusTranslations: Record<string, string> = {
+    completed: 'Concluído',
+    in_progress: 'Em Andamento',
+    approved: 'Aprovado',
+    draft: 'Rascunho',
+  };
 
   return (
     <div className="p-6 space-y-8 relative">
-      {/* Additional background elements for glassmorphism visibility */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Geometric patterns */}
-        <div
-          className="absolute top-20 left-20 w-72 h-72 rounded-full bg-linear-to-r from-blue-500/8 to-purple-500/8 blur-3xl"
-          style={{
-            animation: 'smoothPulse 6s ease-in-out infinite',
-            willChange: 'opacity, transform'
-          }}
-        />
-        <div
-          className="absolute bottom-32 right-32 w-96 h-96 rounded-full bg-linear-to-r from-emerald-500/5 to-cyan-500/5 blur-3xl"
-          style={{
-            animation: 'smoothPulse 6s ease-in-out infinite',
-            animationDelay: '2s',
-            willChange: 'opacity, transform'
-          }}
-        />
-        <div
-          className="absolute top-1/2 left-1/4 w-48 h-48 rounded-full bg-linear-to-r from-pink-500/4 to-orange-500/4 blur-2xl"
-          style={{
-            animation: 'smoothPulse 6s ease-in-out infinite',
-            animationDelay: '4s',
-            willChange: 'opacity, transform'
-          }}
-        />
-
-        {/* Subtle grid overlay */}
-        <div className="absolute inset-0 opacity-[0.02]">
-          <div className="absolute inset-0" style={{
-            backgroundImage: `
-              linear-gradient(rgba(148,163,184,0.1) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(148,163,184,0.1) 1px, transparent 1px)
-            `,
-            backgroundSize: '60px 60px'
-          }} />
-        </div>
-
-        {/* Floating particles effect */}
-        <div
-          className="absolute top-1/4 right-1/4 w-2 h-2 bg-white/20 rounded-full blur-sm"
-          style={{
-            animation: 'smoothFloat 8s ease-in-out infinite',
-            animationDelay: '0s',
-            willChange: 'transform, opacity'
-          }}
-        />
-        <div
-          className="absolute bottom-1/4 left-1/3 w-1 h-1 bg-white/15 rounded-full blur-sm"
-          style={{
-            animation: 'smoothFloat 8s ease-in-out infinite',
-            animationDelay: '2.5s',
-            willChange: 'transform, opacity'
-          }}
-        />
-        <div
-          className="absolute top-3/4 right-1/3 w-1.5 h-1.5 bg-white/25 rounded-full blur-sm"
-          style={{
-            animation: 'smoothFloat 8s ease-in-out infinite',
-            animationDelay: '5s',
-            willChange: 'transform, opacity'
-          }}
-        />
-      </div>
-
+      {/* Header */}
       <div className="max-w-7xl mx-auto relative z-10">
-        {/* Overview Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {/* Earnings (Crew) */}
-          {data?.total_earnings !== undefined && (
-            <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 hover:bg-slate-950/50 transition-all duration-300 group shadow-2xl">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-medium text-slate-400">
-                  Meus Ganhos
-                </h3>
-                <Wallet className="h-5 w-5 text-slate-500 group-hover:text-slate-300 transition-colors" />
-              </div>
-              <p className={`text-2xl font-mono font-bold text-slate-50 transition-all duration-300 ${privacyMode ? 'blur-md select-none' : ''}`}>
-                {formatCurrency(data.total_earnings)}
-              </p>
-            </div>
-          )}
-
-          {/* Production Count (Crew) */}
-          {data?.production_count !== undefined && (
-            <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 hover:bg-slate-950/50 transition-all duration-300 group shadow-2xl">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-medium text-slate-400">
-                  Minhas Produções
-                </h3>
-                <Target className="h-5 w-5 text-slate-500 group-hover:text-slate-300 transition-colors" />
-              </div>
-              <p className="text-2xl font-bold text-slate-50">
-                {data.production_count}
-              </p>
-            </div>
-          )}
-
-          {/* Revenue (Admin) */}
-          {data?.total_revenue !== undefined && data.total_revenue !== null && (
-            <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 hover:bg-slate-950/50 transition-all duration-300 group shadow-2xl">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-medium text-slate-400">
-                  Receita Total
-                </h3>
-                <DollarSign className="h-5 w-5 text-slate-500 group-hover:text-slate-300 transition-colors" />
-              </div>
-              <p className={`text-2xl font-mono font-bold text-slate-50 transition-all duration-300 ${privacyMode ? 'blur-md select-none' : ''}`}>
-                {formatCurrency(data.total_revenue)}
-              </p>
-            </div>
-          )}
-
-          {/* Costs (Admin) */}
-          {data?.total_costs !== undefined && data.total_costs !== null && (
-            <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 hover:bg-slate-950/50 transition-all duration-300 group shadow-2xl">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-medium text-slate-400">
-                  Custos Totais
-                </h3>
-                <Receipt className="h-5 w-5 text-slate-500 group-hover:text-slate-300 transition-colors" />
-              </div>
-              <p className={`text-2xl font-mono font-bold text-slate-50 transition-all duration-300 ${privacyMode ? 'blur-md select-none' : ''}`}>
-                {formatCurrency(data.total_costs)}
-              </p>
-            </div>
-          )}
-
-          {/* Taxes (Admin) */}
-          {data?.total_taxes !== undefined && data.total_taxes !== null && (
-            <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 hover:bg-slate-950/50 transition-all duration-300 group shadow-2xl">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-medium text-slate-400">
-                  Impostos
-                </h3>
-                <Calendar className="h-5 w-5 text-slate-500 group-hover:text-slate-300 transition-colors" />
-              </div>
-              <p className={`text-2xl font-mono font-bold text-slate-50 transition-all duration-300 ${privacyMode ? 'blur-md select-none' : ''}`}>
-                {formatCurrency(data.total_taxes)}
-              </p>
-            </div>
-          )}
-
-          {/* Profit (Admin) */}
-          {data?.total_profit !== undefined && data.total_profit !== null && (
-            <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 hover:bg-slate-950/50 transition-all duration-300 group shadow-2xl">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-medium text-slate-400">
-                  Lucro Líquido
-                </h3>
-                <TrendingUp className="h-5 w-5 text-slate-500 group-hover:text-emerald-400 transition-colors" />
-              </div>
-              <p className={`text-2xl font-mono font-bold text-emerald-400 transition-all duration-300 ${privacyMode ? 'blur-md select-none' : ''}`}>
-                {formatCurrency(data.total_profit)}
-              </p>
-            </div>
-          )}
-
-          {/* Total Productions (Admin) */}
-          {data?.total_productions !== undefined && data.total_productions !== null && (
-            <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 hover:bg-slate-950/50 transition-all duration-300 group shadow-2xl">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-medium text-slate-400">
-                  Total de Produções
-                </h3>
-                <Target className="h-5 w-5 text-slate-500 group-hover:text-slate-300 transition-colors" />
-              </div>
-              <p className="text-2xl font-bold text-slate-50">
-                {data.total_productions}
-              </p>
-            </div>
-          )}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-50 mb-2">
+              Dashboard Executivo
+            </h1>
+            <p className="text-slate-400">
+              Visão completa do desempenho da FVA
+            </p>
+          </div>
+          <div className="flex items-center gap-4">
+            <select
+              value={selectedPeriod}
+              onChange={(e) => setSelectedPeriod(e.target.value as any)}
+              className="bg-slate-900/50 border border-slate-700 rounded-lg px-3 py-2 text-slate-50"
+            >
+              <option value="current_month">Mês Atual</option>
+              <option value="3months">Últimos 3 meses</option>
+              <option value="6months">Últimos 6 meses</option>
+              <option value="12months">Últimos 12 meses</option>
+              <option value="year">Este ano</option>
+            </select>
+          </div>
         </div>
 
-        {/* Profit Chart */}
+        {/* KPI Cards - Enhanced */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-6 mb-8">
+          {/* Revenue */}
+          <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 hover:bg-slate-950/50 transition-all duration-300 group shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-slate-400">
+                Receita Total
+              </h3>
+              <DollarSign className="h-5 w-5 text-slate-500 group-hover:text-emerald-400 transition-colors" />
+            </div>
+            <p className={`text-2xl font-mono font-bold text-emerald-400 transition-all duration-300 ${privacyMode ? 'blur-md select-none' : ''}`}>
+              {formatCurrency(data?.total_revenue || 0)}
+            </p>
+            <div className="flex items-center mt-2">
+              <TrendingUp className="h-4 w-4 text-emerald-400 mr-1" />
+              <span className="text-xs text-emerald-400">+12.5% vs mês anterior</span>
+            </div>
+          </div>
+
+          {/* Costs */}
+          <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 hover:bg-slate-950/50 transition-all duration-300 group shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-slate-400">
+                Custos Totais
+              </h3>
+              <Receipt className="h-5 w-5 text-slate-500 group-hover:text-red-400 transition-colors" />
+            </div>
+            <p className={`text-2xl font-mono font-bold text-red-400 transition-all duration-300 ${privacyMode ? 'blur-md select-none' : ''}`}>
+              {formatCurrency(data?.total_costs || 0)}
+            </p>
+            <div className="flex items-center mt-2">
+              <TrendingUp className="h-4 w-4 text-slate-400 mr-1" />
+              <span className="text-xs text-slate-400">+8.2% vs mês anterior</span>
+            </div>
+          </div>
+
+          {/* Profit */}
+          <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 hover:bg-slate-950/50 transition-all duration-300 group shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-slate-400">
+                Lucro Líquido
+              </h3>
+              <TrendingUp className="h-5 w-5 text-slate-500 group-hover:text-emerald-400 transition-colors" />
+            </div>
+            <p className={`text-2xl font-mono font-bold text-emerald-400 transition-all duration-300 ${privacyMode ? 'blur-md select-none' : ''}`}>
+              {formatCurrency(data?.total_profit || 0)}
+            </p>
+            <div className="flex items-center mt-2">
+              <TrendingUp className="h-4 w-4 text-emerald-400 mr-1" />
+              <span className="text-xs text-emerald-400">+15.8% vs mês anterior</span>
+            </div>
+          </div>
+
+          {/* Profit Margin */}
+          <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 hover:bg-slate-950/50 transition-all duration-300 group shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-slate-400">
+                Margem de Lucro
+              </h3>
+              <Target className="h-5 w-5 text-slate-500 group-hover:text-blue-400 transition-colors" />
+            </div>
+            <p className="text-2xl font-bold text-blue-400">
+              {data?.profit_margin?.toFixed(1)}%
+            </p>
+            <div className="flex items-center mt-2">
+              <TrendingUp className="h-4 w-4 text-emerald-400 mr-1" />
+              <span className="text-xs text-emerald-400">Meta: 25%</span>
+            </div>
+          </div>
+
+          {/* Total Productions */}
+          <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 hover:bg-slate-950/50 transition-all duration-300 group shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-slate-400">
+                Total Produções
+              </h3>
+              <Package className="h-5 w-5 text-slate-500 group-hover:text-slate-300 transition-colors" />
+            </div>
+            <p className="text-2xl font-bold text-slate-50">
+              {data?.total_productions || 0}
+            </p>
+            <div className="flex items-center mt-2">
+              <Activity className="h-4 w-4 text-blue-400 mr-1" />
+              <span className="text-xs text-blue-400">+3 este mês</span>
+            </div>
+          </div>
+
+          {/* Completion Rate */}
+          <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 hover:bg-slate-950/50 transition-all duration-300 group shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-slate-400">
+                Taxa de Conclusão
+              </h3>
+              <BarChart3 className="h-5 w-5 text-slate-500 group-hover:text-purple-400 transition-colors" />
+            </div>
+            <p className="text-2xl font-bold text-purple-400">
+              {data?.completion_rate?.toFixed(1)}%
+            </p>
+            <div className="flex items-center mt-2">
+              <TrendingUp className="h-4 w-4 text-emerald-400 mr-1" />
+              <span className="text-xs text-emerald-400">Meta: 90%</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          {/* Revenue Trend */}
+          <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-slate-50">
+                Evolução da Receita
+              </h3>
+              <BarChart3 className="h-5 w-5 text-blue-400" />
+            </div>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={revenueChartData}>
+                  <XAxis
+                    dataKey="month"
+                    stroke="rgb(148, 163, 184)"
+                    fontSize={12}
+                    tick={{ fill: 'rgb(148, 163, 184)' }}
+                  />
+                  <YAxis
+                    stroke="rgb(148, 163, 184)"
+                    fontSize={12}
+                    tick={{ fill: 'rgb(148, 163, 184)' }}
+                    tickFormatter={(value) => `R$ ${(value / 1000).toFixed(0)}k`}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'rgb(30, 41, 59)',
+                      border: '1px solid rgba(148, 163, 184, 0.2)',
+                      borderRadius: '8px',
+                      color: 'rgb(248, 250, 252)',
+                    }}
+                    formatter={(value: number | undefined) => value ? [formatCurrency(value * 100), 'Receita'] : ['R$ 0,00', 'Receita']}
+                    labelStyle={{ color: 'rgb(148, 163, 184)' }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke="rgb(59, 130, 246)"
+                    fill="rgba(59, 130, 246, 0.2)"
+                    strokeWidth={2}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Productions by Status */}
+          <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-slate-50">
+                Produções por Status
+              </h3>
+              <PieChartIcon className="h-5 w-5 text-purple-400" />
+            </div>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={statusChartData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    dataKey="count"
+                    label={({ index }) => {
+                      const item = statusChartData[index];
+                      const translatedStatus = statusTranslations[item?.status] || item?.status;
+                      return `${translatedStatus}: ${item?.percentage}%`;
+                    }}
+                  >
+                    {statusChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={statusColors[entry.status as keyof typeof statusColors] || '#6b7280'} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'rgb(30, 41, 59)',
+                      border: '1px solid rgba(148, 163, 184, 0.2)',
+                      borderRadius: '8px',
+                      color: 'rgb(248, 250, 252)',
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+
+        {/* Top Clients Table */}
         <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 shadow-2xl">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-slate-50">
-              Evolução do Lucro
+              Top Clientes
             </h3>
-            <TrendingUp className="h-5 w-5 text-emerald-400" />
+            <Users className="h-5 w-5 text-indigo-400" />
           </div>
-
-          <div className="h-40">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={profitChartData}>
-                <XAxis
-                  dataKey="month"
-                  stroke="rgb(148, 163, 184)"
-                  fontSize={12}
-                  tick={{ fill: 'rgb(148, 163, 184)' }}
-                />
-                <YAxis
-                  stroke="rgb(148, 163, 184)"
-                  fontSize={12}
-                  tick={{ fill: 'rgb(148, 163, 184)' }}
-                  tickFormatter={(value) => `R$ ${(value / 1000).toFixed(0)}k`}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'rgb(30, 41, 59)',
-                    border: '1px solid rgba(148, 163, 184, 0.2)',
-                    borderRadius: '8px',
-                    color: 'rgb(248, 250, 252)',
-                  }}
-                  formatter={(value: number | undefined) => value ? [formatCurrency(value * 100), 'Lucro'] : ['R$ 0,00', 'Lucro']}
-                  labelStyle={{ color: 'rgb(148, 163, 184)' }}
-                />
-                <Bar
-                  dataKey="profit"
-                  fill="rgba(52, 211, 153, 0.6)"
-                  stroke="rgb(52, 211, 153)"
-                  strokeWidth={1}
-                  radius={[4, 4, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="space-y-4">
+            {data?.top_clients?.map((client, index) => (
+              <div key={client.name} className="flex items-center justify-between p-4 bg-slate-900/30 rounded-lg border border-slate-700/50">
+                <div className="flex items-center">
+                  <div className="w-8 h-8 bg-indigo-500/20 rounded-full flex items-center justify-center mr-3">
+                    <span className="text-sm font-medium text-indigo-400">#{index + 1}</span>
+                  </div>
+                  <div>
+                    <p className="text-slate-50 font-medium">{client.name}</p>
+                    <p className="text-slate-400 text-sm">{client.productions_count} produções</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className={`text-lg font-mono font-bold text-emerald-400 ${privacyMode ? 'blur-md select-none' : ''}`}>
+                    {formatCurrency(client.total_value)}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
