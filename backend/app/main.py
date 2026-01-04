@@ -1,5 +1,6 @@
 import logging
-from fastapi import Depends, FastAPI, Request
+import time
+from fastapi import Depends, FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -44,6 +45,61 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Performance monitoring middleware
+@app.middleware("http")
+async def performance_monitoring(request: Request, call_next):
+    """Middleware to monitor request performance and log metrics."""
+    start_time = time.time()
+
+    # Get user info if available (for authenticated requests)
+    user_id = None
+    org_id = None
+    try:
+        # Try to get user from request state (set by auth middleware)
+        if hasattr(request.state, 'user'):
+            user = request.state.user
+            user_id = user.id
+            org_id = user.organization_id
+    except:
+        pass
+
+    try:
+        response: Response = await call_next(request)
+        process_time = time.time() - start_time
+
+        # Log performance metrics
+        logger.info(
+            f"Request completed",
+            extra={
+                "method": request.method,
+                "path": request.url.path,
+                "status_code": response.status_code,
+                "duration_ms": round(process_time * 1000, 2),
+                "user_id": user_id,
+                "org_id": org_id,
+                "user_agent": request.headers.get("user-agent", "")[:100]  # Truncate for privacy
+            }
+        )
+
+        # Add performance header
+        response.headers["X-Process-Time"] = str(process_time)
+        return response
+
+    except Exception as e:
+        process_time = time.time() - start_time
+        logger.error(
+            f"Request failed",
+            extra={
+                "method": request.method,
+                "path": request.url.path,
+                "duration_ms": round(process_time * 1000, 2),
+                "error": str(e),
+                "user_id": user_id,
+                "org_id": org_id
+            }
+        )
+        raise
+
 # Note: Rate limiting is applied via @limiter.limit() decorators on individual endpoints
 # This provides fine-grained control per endpoint type
 
@@ -66,11 +122,56 @@ async def root():
 
 @app.get("/health")
 async def health_check(db: AsyncSession = Depends(get_db)):
-    """Health check endpoint that tests database connection."""
+    """Enhanced health check endpoint with system metrics."""
+    health_status = {
+        "status": "ok",
+        "timestamp": time.time(),
+        "services": {}
+    }
+
+    # Database health check
     try:
-        # Execute a simple query to test database connection
+        start_time = time.time()
         result = await db.execute(text("SELECT 1"))
         result.fetchone()
-        return {"status": "ok", "db": "connected"}
+        db_time = time.time() - start_time
+        health_status["services"]["database"] = {
+            "status": "ok",
+            "response_time_ms": round(db_time * 1000, 2)
+        }
     except Exception as e:
-        return {"status": "unhealthy", "database": f"error: {str(e)}"}
+        health_status["status"] = "degraded"
+        health_status["services"]["database"] = {
+            "status": "error",
+            "error": str(e)
+        }
+
+    # Redis cache health check
+    try:
+        from app.core.cache import cache
+        if cache.enabled:
+            start_time = time.time()
+            test_result = await cache.get("health_check")
+            redis_time = time.time() - start_time
+            health_status["services"]["redis"] = {
+                "status": "ok",
+                "response_time_ms": round(redis_time * 1000, 2)
+            }
+        else:
+            health_status["services"]["redis"] = {
+                "status": "disabled",
+                "note": "Redis not configured"
+            }
+    except Exception as e:
+        health_status["status"] = "degraded"
+        health_status["services"]["redis"] = {
+            "status": "error",
+            "error": str(e)
+        }
+
+    # System info
+    health_status["version"] = "2.0.0"
+    health_status["environment"] = "development"  # Could be from config
+
+    logger.info("Health check performed", extra={"status": health_status["status"]})
+    return health_status

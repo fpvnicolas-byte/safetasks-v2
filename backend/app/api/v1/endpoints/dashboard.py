@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
 from app.db.session import get_db
+from app.core.cache import cache, CacheKeys
 from app.models.production import Production
 from app.models.production_crew import ProductionCrew
 from app.models.user import User
@@ -19,9 +20,14 @@ async def get_dashboard_summary(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Get dashboard summary based on user role."""
+    """Get dashboard summary based on user role with Redis caching."""
 
     if current_user.role == "admin":
+        # Try cache first
+        cache_key = CacheKeys.dashboard_summary(current_user.organization_id)
+        cached_result = await cache.get(cache_key)
+        if cached_result:
+            return cached_result
         # Admin/Owner: Full organization financial summary
         result = await db.execute(
             select(
@@ -129,6 +135,9 @@ async def get_dashboard_summary(
             "productions_by_status": status_data,
             "top_clients": clients_data
         })
+
+        # Cache the result
+        await cache.set(cache_key, summary, ttl_seconds=300)  # 5 minutes cache
 
     else:
         # Crew: Personal operational dashboard

@@ -10,6 +10,7 @@ from sqlalchemy.orm import selectinload  # type: ignore
 
 from app.api.deps import get_current_active_admin, get_current_user
 from app.db.session import get_db
+from app.core.cache import cache, CacheKeys
 from app.models.client import Client
 from app.models.expense import Expense
 from app.models.production import Production
@@ -72,6 +73,10 @@ async def create_production(
     )
     production = result.scalar_one()
 
+    # Invalidate cache for productions and dashboard
+    await cache.delete_pattern(f"productions:list:{current_user.organization_id}:*")
+    await cache.delete(CacheKeys.dashboard_summary(current_user.organization_id))
+
     return ProductionResponse.from_orm(production)
 
 
@@ -98,6 +103,10 @@ async def delete_production(
     # Delete production (cascade will delete related items and expenses)
     await db.delete(production)
     await db.commit()
+
+    # Invalidate cache for productions and dashboard
+    await cache.delete_pattern(f"productions:list:{current_user.organization_id}:*")
+    await cache.delete(CacheKeys.dashboard_summary(current_user.organization_id))
 
     return {"message": "Production deleted successfully"}
 
@@ -172,20 +181,30 @@ async def get_productions(
 ):
     """
     Get productions for the current user based on their role.
-    
+
     Optimized to use a single query with eager loading to prevent N+1 query problems.
     All related data (items, expenses, crew, client) is loaded in one efficient query.
-    
+    Uses Redis cache for first page to improve performance.
+
     Args:
         skip: Number of records to skip (for pagination). Default: 0
         limit: Maximum number of records to return. Default: 50, Max: 100
         current_user: Authenticated user
         db: Database session
-        
+
     Returns:
         List of productions with pagination metadata
     """
-    
+
+    # Try cache for first page only (most common case)
+    cache_key = None
+    if skip == 0 and limit <= 50:  # Only cache first page with reasonable limit
+        cache_key = CacheKeys.productions_list(current_user.organization_id, current_user.role, skip, limit)
+        cached_result = await cache.get(cache_key)
+        if cached_result:
+            logger.info(f"Cache hit for productions list: {cache_key}")
+            return cached_result
+
     # Validate pagination parameters
     if skip < 0:
         skip = 0
@@ -206,6 +225,7 @@ async def get_productions(
         total_count = count_result.scalar_one()
         
         # Then get paginated results with explicit eager loading
+        # selectinload prevents N+1 queries by loading all relationships in one query
         result = await db.execute(
             select(Production)
             .where(Production.organization_id == current_user.organization_id)
@@ -220,28 +240,28 @@ async def get_productions(
             .limit(limit)
         )
 
-        # Use unique() to handle potential duplicates from joins and ensure relations are loaded
-        productions = result.unique().scalars().all()
+        # No unique() needed with selectinload - it prevents duplicates by design
+        productions = result.scalars().all()
 
-        # Debug logging - assuming selectinload worked
-        for prod in productions[:2]:
-            try:
-                items_count = len(prod.items) if prod.items else 0
-                expenses_count = len(prod.expenses) if prod.expenses else 0
-                crew_count = len(prod.crew) if prod.crew else 0
-                logger.info(f"ADMIN Production {prod.id}: items={items_count}, expenses={expenses_count}, crew={crew_count}")
-            except Exception as e:
-                logger.warning(f"Could not access relations for production {prod.id}: {e}")
+        # Log query performance metrics (production-ready logging)
+        logger.info(f"ADMIN: Retrieved {len(productions)} productions with eager loading (skip={skip}, limit={limit})")
 
         # Totals are calculated during write operations, no need to recalculate on read
 
-        return {
+        result = {
             "productionsList": [ProductionResponse.from_orm(production) for production in productions],
             "total": total_count,
             "skip": skip,
             "limit": limit,
             "has_more": (skip + limit) < total_count
         }
+
+        # Cache result for first page
+        if cache_key:
+            await cache.set(cache_key, result, ttl_seconds=300)  # 5 minutes cache
+            logger.info(f"Cached productions list: {cache_key}")
+
+        return result
 
     else:
         # Crew members see only productions they're assigned to
@@ -262,6 +282,7 @@ async def get_productions(
         total_count = count_result.scalar_one()
         
         # Then get paginated results with explicit eager loading
+        # Added client loading to prevent N+1 queries when displaying client names
         result = await db.execute(
             select(Production)
             .join(
@@ -275,29 +296,23 @@ async def get_productions(
             .options(
                 selectinload(Production.items),
                 selectinload(Production.expenses),
-                selectinload(Production.crew).selectinload(ProductionCrew.user)
+                selectinload(Production.crew).selectinload(ProductionCrew.user),
+                selectinload(Production.client)  # Added to prevent N+1 queries for client names
             )
             .order_by(Production.created_at.desc())
             .offset(skip)
             .limit(limit)
         )
 
-        # Use unique() to handle potential duplicates from joins
-        productions = result.unique().scalars().all()
+        # No unique() needed with selectinload - it prevents duplicates by design
+        productions = result.scalars().all()
 
         # Privacy filter: Crew members should only see their own crew information
         for production in productions:
             production.crew = [member for member in production.crew if member.user_id == current_user.id]
 
-        # Debug logging
-        for prod in productions[:2]:
-            try:
-                items_count = len(prod.items) if prod.items else 0
-                expenses_count = len(prod.expenses) if prod.expenses else 0
-                crew_count = len(prod.crew) if prod.crew else 0
-                logger.info(f"CREW Production {prod.id}: items={items_count}, expenses={expenses_count}, crew={crew_count}")
-            except Exception as e:
-                logger.warning(f"Could not access relations for crew production {prod.id}: {e}")
+        # Log query performance metrics (production-ready logging)
+        logger.info(f"CREW: Retrieved {len(productions)} productions with eager loading (skip={skip}, limit={limit})")
 
         # Totals are calculated during write operations, no need to recalculate on read
 
