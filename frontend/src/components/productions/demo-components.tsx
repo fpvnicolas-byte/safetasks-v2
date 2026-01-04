@@ -127,6 +127,18 @@ export default function ProductionComponentsDemo() {
                 ✅ Filtro por período FUNCIONAL - Inicia no mês corrente
                 ✅ Erro PieLabelRenderProps CORRIGIDO - Labels funcionam corretamente
                 ✅ Tradução do gráfico de pizza IMPLEMENTADA - Status em português
+                <br />
+                🚀 **SPRINT 2 - RELATÓRIOS AVANÇADOS**
+                <br />
+                ✅ Página de Teste CRIADA: http://localhost:3000/dashboard/reports-test
+                <br />
+                ✅ Componente ReportsGenerator CRIADO (jspdf)
+                <br />
+                ✅ PDF Executivo com KPIs, Status e Top Clientes
+                <br />
+                ✅ Carregamento Lazy + Tratamento de Erros
+                <br />
+                📦 Para instalar: npm install jspdf (dependência leve ~200KB)
             </div>
         </div>
     );

@@ -34,33 +34,25 @@ export default function DashboardTestPage() {
         const fetchDashboardData = async () => {
             try {
                 const response = await dashboardApi.getSummary();
-                // Enhanced mock data for advanced dashboard
-                const enhancedData = {
+                // Calcular campos derivados necessários para os gráficos
+                const realData = {
                     ...response,
-                    monthly_revenue: [
-                        { month: 'Jan', revenue: 45000 },
-                        { month: 'Fev', revenue: 52000 },
-                        { month: 'Mar', revenue: 48000 },
-                        { month: 'Abr', revenue: 61000 },
-                        { month: 'Mai', revenue: 55000 },
-                        { month: 'Jun', revenue: 67000 },
-                    ],
-                    productions_by_status: [
-                        { status: 'completed', count: 12, percentage: 60 },
-                        { status: 'in_progress', count: 5, percentage: 25 },
-                        { status: 'approved', count: 2, percentage: 10 },
-                        { status: 'draft', count: 1, percentage: 5 },
-                    ],
-                    top_clients: [
-                        { name: 'Cliente A', total_value: 25000, productions_count: 3 },
-                        { name: 'Cliente B', total_value: 22000, productions_count: 2 },
-                        { name: 'Cliente C', total_value: 18000, productions_count: 2 },
-                    ],
-                    profit_margin: 28.5,
-                    avg_production_value: 12500,
-                    completion_rate: 85.2,
+                    profit_margin: response.total_revenue && response.total_revenue > 0
+                        ? (response.total_profit / response.total_revenue) * 100
+                        : 0,
+                    completion_rate: response.completion_rate || (
+                        response.productions_by_status
+                            ? response.productions_by_status.find((s: any) => s.status === 'completed')?.percentage || 0
+                            : 0
+                    ),
+                    avg_production_value: response.avg_production_value || (
+                        response.total_productions && response.total_revenue
+                            ? response.total_revenue / response.total_productions
+                            : 0
+                    )
                 };
-                setData(enhancedData);
+
+                setData(realData);
             } catch (err: any) {
                 setError(err.response?.data?.detail || 'Erro ao carregar dados');
             } finally {
@@ -166,7 +158,7 @@ export default function DashboardTestPage() {
                             </h3>
                             <Receipt className="h-5 w-5 text-slate-500 group-hover:text-red-400 transition-colors" />
                         </div>
-                        <p className={`text-2xl font-mono font-bold text-red-400 transition-all duration-300 ${privacyMode ? 'blur-md select-none' : ''}`}>
+                        <p className={`text-xs font-mono font-bold text-red-400 transition-all duration-300 ${privacyMode ? 'blur-md select-none' : ''}`}>
                             {formatCurrency(data?.total_costs || 0)}
                         </p>
                         <div className="flex items-center mt-2">
@@ -183,7 +175,7 @@ export default function DashboardTestPage() {
                             </h3>
                             <TrendingUp className="h-5 w-5 text-slate-500 group-hover:text-emerald-400 transition-colors" />
                         </div>
-                        <p className={`text-2xl font-mono font-bold text-emerald-400 transition-all duration-300 ${privacyMode ? 'blur-md select-none' : ''}`}>
+                        <p className={`text-xs font-mono font-bold text-emerald-400 transition-all duration-300 ${privacyMode ? 'blur-md select-none' : ''}`}>
                             {formatCurrency(data?.total_profit || 0)}
                         </p>
                         <div className="flex items-center mt-2">
