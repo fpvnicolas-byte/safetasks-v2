@@ -19,6 +19,7 @@ import { ProductionHeader } from '@/components/productions/sections/ProductionHe
 import { ProductionFilters } from '@/components/productions/sections/ProductionFilters';
 import { ProductionEditSheet } from '@/components/productions/sections/ProductionEditSheet';
 import { ProductionGrid } from '@/components/productions/sections/ProductionGrid';
+import { ProductionCardSkeleton } from '@/components/ui/production-card-skeleton';
 
 // Interfaces baseadas nos schemas do backend
 interface ProductionCrewMember {
@@ -581,10 +582,24 @@ export default function ProductionsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-400 mx-auto mb-4"></div>
-          <p className="text-slate-400">Carregando produções...</p>
+      <div className="space-y-6">
+        {/* Header Skeleton */}
+        <div className="flex items-center justify-between">
+          <div className="h-8 w-48 bg-slate-800 rounded animate-pulse"></div>
+          <div className="h-10 w-32 bg-slate-800 rounded animate-pulse"></div>
+        </div>
+
+        {/* Filters Skeleton */}
+        <div className="flex items-center gap-4">
+          <div className="h-10 w-64 bg-slate-800 rounded animate-pulse"></div>
+          <div className="h-10 w-32 bg-slate-800 rounded animate-pulse"></div>
+        </div>
+
+        {/* Production Cards Grid Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <ProductionCardSkeleton key={i} />
+          ))}
         </div>
       </div>
     );

@@ -6,6 +6,7 @@ import { TrendingUp, Receipt, DollarSign, Target, Package, BarChart3, PieChart a
 import { dashboardApi } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { usePrivacy } from './layout';
+import { DashboardCardSkeleton } from '@/components/ui/dashboard-card-skeleton';
 
 interface DashboardData {
   total_revenue?: number;
@@ -95,10 +96,55 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-400 mx-auto mb-4"></div>
-          <p className="text-slate-400">Carregando dashboard executivo...</p>
+      <div className="space-y-8">
+        {/* KPI Cards Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-6 mb-8">
+          <DashboardCardSkeleton />
+          <DashboardCardSkeleton />
+          <DashboardCardSkeleton />
+          <DashboardCardSkeleton />
+          <DashboardCardSkeleton />
+          <DashboardCardSkeleton />
+        </div>
+
+        {/* Charts Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          {/* Revenue Chart Skeleton */}
+          <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <div className="h-6 w-48 bg-slate-800 rounded animate-pulse"></div>
+              <div className="h-5 w-5 bg-slate-800 rounded animate-pulse"></div>
+            </div>
+            <div className="h-64 bg-slate-900/50 rounded animate-pulse"></div>
+          </div>
+
+          {/* Status Chart Skeleton */}
+          <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <div className="h-6 w-40 bg-slate-800 rounded animate-pulse"></div>
+              <div className="h-5 w-5 bg-slate-800 rounded animate-pulse"></div>
+            </div>
+            <div className="h-64 bg-slate-900/50 rounded animate-pulse"></div>
+          </div>
+        </div>
+
+        {/* Top Clients Skeleton */}
+        <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 shadow-2xl mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div className="h-6 w-32 bg-slate-800 rounded animate-pulse"></div>
+            <div className="h-5 w-5 bg-slate-800 rounded animate-pulse"></div>
+          </div>
+          <div className="space-y-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center justify-between p-4 bg-slate-900/50 rounded-lg animate-pulse">
+                <div className="flex items-center space-x-4">
+                  <div className="h-8 w-8 bg-slate-700 rounded-full"></div>
+                  <div className="h-4 w-32 bg-slate-700 rounded"></div>
+                </div>
+                <div className="h-4 w-20 bg-slate-700 rounded"></div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
