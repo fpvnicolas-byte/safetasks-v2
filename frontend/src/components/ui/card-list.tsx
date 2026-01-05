@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatCurrency } from '@/lib/utils';
 
 interface CardListItemProps {
   id: number;
@@ -31,14 +32,6 @@ export function CardListItem({
   onDelete,
   privacyMode = false
 }: CardListItemProps) {
-  // Mantém a formatação com ponto de milhar (ex: 1.000,00)
-  const formatBRL = (valueInCents: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(valueInCents / 100);
-  };
-
   return (
     <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 hover:bg-slate-950/50 transition-all duration-300 group shadow-lg">
       <div className="flex items-start justify-between mb-4">
@@ -89,10 +82,10 @@ export function CardListItem({
         <div className="flex items-center justify-between pt-4 border-t border-white/5">
           {/* AQUI ESTÁ A CORREÇÃO: Texto maior e em negrito */}
           <span className="text-lg font-bold text-slate-200">Preço base:</span>
-          
+
           {/* Valor base agora mais discreto em comparação ao label */}
           <span className={`text-l font-bold text-emerald-400 tracking-tight transition-all duration-700 ${privacyMode ? 'blur-md grayscale pointer-events-none select-none' : ''}`}>
-            {formatBRL(price)}
+            {formatCurrency(price)}
           </span>
         </div>
       )}

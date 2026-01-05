@@ -29,6 +29,7 @@ interface ProductionEditSheetProps {
         due_date: string;
         discount: number;
         tax_rate: number;
+        notes: string;
     };
     onEditFormChange: (updates: Partial<ProductionEditSheetProps['editForm']>) => void;
     onAddShootingSession: () => void;

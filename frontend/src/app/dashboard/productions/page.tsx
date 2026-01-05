@@ -105,6 +105,12 @@ export default function ProductionsPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [productionToDelete, setProductionToDelete] = useState<Production | null>(null);
+
+  // Pagination state
+  const [hasMore, setHasMore] = useState(false);
+  const [currentSkip, setCurrentSkip] = useState(0);
+  const LIMIT = 50;
+
   const { mutate } = useSWRConfig();
   const router = useRouter();
 
@@ -161,7 +167,7 @@ export default function ProductionsPage() {
   });
 
   useEffect(() => {
-    fetchProductions();
+    fetchProductions(0);
   }, []);
 
   // Buscar serviços e usuários quando necessário
@@ -385,17 +391,29 @@ export default function ProductionsPage() {
     }
   };
 
-  const fetchProductions = async () => {
+  const fetchProductions = async (skip = 0) => {
     try {
-      const response: ProductionsResponse = await productionsApi.getProductions();
-      setProductions(response.productionsList || []);
-      // TODO: Implementar paginação no frontend quando necessário
-      // Por enquanto, apenas carregamos a primeira página (skip=0, limit=50)
+      if (skip === 0) setLoading(true);
+
+      const response: ProductionsResponse = await productionsApi.getProductions(skip, LIMIT);
+
+      if (skip === 0) {
+        setProductions(response.productionsList || []);
+      } else {
+        setProductions(prev => [...prev, ...(response.productionsList || [])]);
+      }
+
+      setHasMore(response.has_more);
+      setCurrentSkip(skip);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Erro ao carregar produções');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLoadMore = () => {
+    fetchProductions(currentSkip + LIMIT);
   };
 
   // Funções auxiliares para shooting sessions dinâmicas
@@ -746,6 +764,19 @@ export default function ProductionsPage() {
             <p className="text-slate-500 text-sm">
               {searchTerm || statusFilter !== 'all' ? 'Tente ajustar os filtros de busca' : 'Comece criando sua primeira produção'}
             </p>
+          </div>
+        )}
+
+        {/* Load More Button */}
+        {hasMore && !searchTerm && statusFilter === 'all' && (
+          <div className="flex justify-center mt-8 pb-8">
+            <Button
+              onClick={handleLoadMore}
+              variant="outline"
+              className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+            >
+              Carregar Mais Produções
+            </Button>
           </div>
         )}
       </div>

@@ -57,11 +57,12 @@ const DropdownMenuTrigger: React.FC<DropdownMenuTriggerProps> = ({ children, asC
     setIsOpen(true)
   }
 
-  if (asChild && React.isValidElement(children)) {
-    return React.cloneElement(children, {
-      onClick: handleClick,
-      ...children.props
-    })
+  if (asChild) {
+    return (
+      <div onClick={handleClick} style={{ display: 'inline-block' }}>
+        {children}
+      </div>
+    )
   }
 
   return (

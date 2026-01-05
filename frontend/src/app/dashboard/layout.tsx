@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -74,11 +74,19 @@ export default function DashboardLayout({
     focusRing
   } = useDesignTokens();
 
-  // Temporariamente removido skip links para resolver problemas de parsing
+  // Filter navigation based on role
+  const filteredNavigation = navigation.filter(item => {
+    if (!user) return false;
+    if (user.role === 'admin') return true;
+
+    // Crew navigation whitelist
+    return ['/dashboard', '/dashboard/productions', '/dashboard/calendar'].includes(item.href);
+  });
 
   // Define routes that should show the privacy toggle button (pages with financial data)
   const financialRoutes = ['/dashboard', '/dashboard/productions', '/dashboard/services'];
-  const shouldShowPrivacyButton = financialRoutes.includes(pathname);
+  // Only show privacy button for admins on financial routes
+  const shouldShowPrivacyButton = user?.role === 'admin' && financialRoutes.includes(pathname);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -100,6 +108,48 @@ export default function DashboardLayout({
     window.location.href = '/login';
   };
 
+  // Dynamic Background Orbs Configuration
+  // Fixed: Moved before conditional returns to follow Rules of Hooks
+  // Improved: Using explicit styles to ensure CSS transitions trigger reliably
+  const orbStyles = useMemo(() => {
+    console.log(`[DashboardLayout] Detecting route change: ${pathname}`);
+
+    if (pathname.startsWith('/dashboard/productions')) {
+      return {
+        orb1: { top: '10%', left: '-10%', width: '900px', height: '900px', backgroundColor: 'rgba(37, 99, 235, 0.4)' },
+        orb2: { bottom: '0%', right: '5%', width: '800px', height: '800px', backgroundColor: 'rgba(6, 182, 212, 0.3)' },
+        orb3: { top: '40%', left: '20%', width: '600px', height: '600px', backgroundColor: 'rgba(79, 70, 229, 0.2)' },
+      };
+    }
+    if (pathname.startsWith('/dashboard/calendar')) {
+      return {
+        orb1: { top: '-10%', left: '20%', width: '1000px', height: '1000px', backgroundColor: 'rgba(147, 51, 234, 0.4)' },
+        orb2: { bottom: '-5%', right: '-5%', width: '900px', height: '900px', backgroundColor: 'rgba(236, 72, 153, 0.3)' },
+        orb3: { top: '30%', left: '50%', width: '500px', height: '500px', backgroundColor: 'rgba(139, 92, 246, 0.2)' },
+      };
+    }
+    if (pathname.startsWith('/dashboard/users')) {
+      return {
+        orb1: { top: '40%', left: '10%', width: '800px', height: '800px', backgroundColor: 'rgba(5, 150, 105, 0.4)' },
+        orb2: { top: '-5%', right: '0%', width: '900px', height: '900px', backgroundColor: 'rgba(20, 184, 166, 0.3)' },
+        orb3: { bottom: '10%', left: '30%', width: '600px', height: '600px', backgroundColor: 'rgba(34, 197, 94, 0.2)' },
+      };
+    }
+    if (pathname.startsWith('/dashboard/settings')) {
+      return {
+        orb1: { top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '1100px', height: '1100px', backgroundColor: 'rgba(71, 85, 105, 0.4)' },
+        orb2: { top: '10%', left: '10%', width: '500px', height: '500px', backgroundColor: 'rgba(59, 130, 246, 0.2)' },
+        orb3: { bottom: '10%', right: '10%', width: '500px', height: '500px', backgroundColor: 'rgba(16, 185, 129, 0.2)' },
+      };
+    }
+    // Default (Dashboard / Resumo)
+    return {
+      orb1: { top: '0%', left: '15%', width: '900px', height: '900px', backgroundColor: 'rgba(16, 185, 129, 0.4)' },
+      orb2: { bottom: '5%', right: '5%', width: '1000px', height: '1000px', backgroundColor: 'rgba(59, 130, 246, 0.3)' },
+      orb3: { top: '40%', left: '40%', width: '700px', height: '700px', backgroundColor: 'rgba(234, 179, 8, 0.2)' },
+    };
+  }, [pathname]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
@@ -109,7 +159,45 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex relative overflow-hidden">
+    <div className="min-h-screen flex relative overflow-hidden bg-slate-950 text-slate-50">
+      {/* Dynamic Background Orbs Layer */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `radial-gradient(circle at 1px 1px, rgba(148,163,184,0.15) 1px, transparent 0)`,
+            backgroundSize: '30px 30px'
+          }} />
+        </div>
+
+        {/* The Orbs - Using style for guaranteed movement transition */}
+        <div
+          className="absolute rounded-full blur-[150px] animate-breathing"
+          style={{
+            ...orbStyles.orb1,
+            transition: 'all 3s cubic-bezier(0.4, 0, 0.2, 1)',
+            zIndex: 1
+          }}
+        />
+        <div
+          className="absolute rounded-full blur-[130px] animate-breathing"
+          style={{
+            ...orbStyles.orb2,
+            transition: 'all 3s cubic-bezier(0.4, 0, 0.2, 1)',
+            animationDelay: '2s',
+            zIndex: 1
+          }}
+        />
+        <div
+          className="absolute rounded-full blur-[110px] animate-breathing"
+          style={{
+            ...orbStyles.orb3,
+            transition: 'all 3s cubic-bezier(0.4, 0, 0.2, 1)',
+            animationDelay: '4s',
+            zIndex: 1
+          }}
+        />
+      </div>
+
       {/* Skip Links para acessibilidade */}
       <a
         href="#navigation"
@@ -133,45 +221,6 @@ export default function DashboardLayout({
       >
         Pular para conteúdo principal
       </a>
-        {/* Background Pattern and Light Effects */}
-      <div className="absolute inset-0 overflow-hidden">
-        {/* Subtle dot pattern */}
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute inset-0" style={{
-            backgroundImage: `radial-gradient(circle at 1px 1px, rgba(148,163,184,0.15) 1px, transparent 0)`,
-            backgroundSize: '20px 20px'
-          }} />
-        </div>
-
-        {/* Light orbs */}
-        <div
-          className="absolute top-1/4 left-1/3 w-96 h-96 rounded-full bg-emerald-500/20 blur-[120px] -z-10"
-          style={{
-            animation: 'smoothPulse 6s ease-in-out infinite',
-            willChange: 'opacity, transform'
-          }}
-        />
-        <div
-          className="absolute top-1/2 right-1/4 w-80 h-80 rounded-full bg-blue-500/15 blur-[100px] -z-10"
-          style={{
-            animation: 'smoothPulse 6s ease-in-out infinite',
-            animationDelay: '2s',
-            willChange: 'opacity, transform'
-          }}
-        />
-        <div
-          className="absolute bottom-1/4 left-1/2 w-64 h-64 rounded-full bg-purple-500/10 blur-[80px] -z-10"
-          style={{
-            animation: 'smoothPulse 6s ease-in-out infinite',
-            animationDelay: '4s',
-            willChange: 'opacity, transform'
-          }}
-        />
-
-        {/* Additional ambient lights */}
-        <div className="absolute top-1/6 right-1/6 w-32 h-32 rounded-full bg-cyan-500/10 blur-[60px] -z-10" />
-        <div className="absolute bottom-1/6 left-1/6 w-40 h-40 rounded-full bg-pink-500/8 blur-[70px] -z-10" />
-      </div>
 
       {/* Sidebar */}
       <nav
@@ -210,7 +259,7 @@ export default function DashboardLayout({
           {/* Navigation */}
           <nav id="navigation" className="flex-1 px-4 py-6">
             <ul className="space-y-2" role="menubar">
-              {navigation.map((item) => {
+              {filteredNavigation.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href;
 
@@ -375,39 +424,39 @@ export default function DashboardLayout({
             </div>
             <div className="flex items-center space-x-4">
               {shouldShowPrivacyButton && (
-              <button
-                onClick={() => setPrivacyMode(!privacyMode)}
-                className="p-2 rounded-lg focus:outline-none"
-                style={{
-                  ...focusRing(colors.primary[500]),
-                  backgroundColor: colors.glass.light,
-                  transition: transitions.normal,
-                  borderRadius: borderRadius.lg,
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = colors.glass.medium;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = colors.glass.light;
-                }}
-                title={privacyMode ? 'Desativar modo privacidade' : 'Ativar modo privacidade'}
-                aria-label={privacyMode ? 'Desativar modo privacidade' : 'Ativar modo privacidade'}
-                aria-pressed={privacyMode}
-              >
-                {privacyMode ? (
-                  <EyeOff
-                    className="h-5 w-5"
-                    style={{ color: colors.slate[400] }}
-                    aria-hidden="true"
-                  />
-                ) : (
-                  <Eye
-                    className="h-5 w-5"
-                    style={{ color: colors.slate[400] }}
-                    aria-hidden="true"
-                  />
-                )}
-              </button>
+                <button
+                  onClick={() => setPrivacyMode(!privacyMode)}
+                  className="p-2 rounded-lg focus:outline-none"
+                  style={{
+                    ...focusRing(colors.primary[500]),
+                    backgroundColor: colors.glass.light,
+                    transition: transitions.normal,
+                    borderRadius: borderRadius.lg,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = colors.glass.medium;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = colors.glass.light;
+                  }}
+                  title={privacyMode ? 'Desativar modo privacidade' : 'Ativar modo privacidade'}
+                  aria-label={privacyMode ? 'Desativar modo privacidade' : 'Ativar modo privacidade'}
+                  aria-pressed={privacyMode}
+                >
+                  {privacyMode ? (
+                    <EyeOff
+                      className="h-5 w-5"
+                      style={{ color: colors.slate[400] }}
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <Eye
+                      className="h-5 w-5"
+                      style={{ color: colors.slate[400] }}
+                      aria-hidden="true"
+                    />
+                  )}
+                </button>
               )}
               <div className="text-right">
                 <p
@@ -453,9 +502,9 @@ export default function DashboardLayout({
           }}
         />
 
-      {/* Painel de Acessibilidade (apenas desenvolvimento) */}
-      <AccessibilityPanel />
-    </main>
-  </div>
+        {/* Painel de Acessibilidade (apenas desenvolvimento) */}
+        <AccessibilityPanel />
+      </main>
+    </div>
   );
 }

@@ -76,6 +76,7 @@ interface Production {
   total_value: number;
   total_cost: number;
   profit: number;
+  notes: string | null;
   client?: Client;
   crew: ProductionCrewMember[];
   items: ProductionItem[];
@@ -468,7 +469,7 @@ export default function ProductionsTestPage() {
             try {
               toast.loading('Gerando orçamento...', { id: 'budget-generation' });
 
-              const productionData = await productionsApi.getProduction(production.id);
+              const productionData = await productionsApi.getProduction(Number(production.id));
               const budgetData = {
                 client: productionData.client || {
                   full_name: 'Cliente não informado',
