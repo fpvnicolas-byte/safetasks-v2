@@ -24,15 +24,12 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="SafeTasks V2 API", version="0.1.0")
 
-# TODO: Rate limiting temporarily disabled - install slowapi to enable
-# from app.core.rate_limit import limiter
-# from slowapi import _rate_limit_exceeded_handler
-# from slowapi.errors import RateLimitExceeded
-#
-# app.state.limiter = limiter
-# app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+from app.core.rate_limit import limiter
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
-logger.warning("Rate limiting is temporarily disabled. Install slowapi to enable: 'poetry add slowapi'")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 logger.info("SafeTasks V2 API starting up")
 

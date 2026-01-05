@@ -6,7 +6,7 @@ from sqlalchemy import select, func  # type: ignore
 from sqlalchemy.ext.asyncio import AsyncSession  # type: ignore
 from sqlalchemy.orm import selectinload  # type: ignore
 
-# from app.core.rate_limit import limiter  # TODO: Enable when slowapi is installed
+from app.core.rate_limit import limiter
 
 from app.api.deps import get_current_active_admin, get_current_user
 from app.db.session import get_db
@@ -26,7 +26,7 @@ router = APIRouter()
 
 
 @router.post("/", response_model=ProductionResponse)
-# @limiter.limit("30/minute")  # Write operations limit - TODO: Enable when slowapi is installed
+@limiter.limit("30/minute")  # Write operations limit
 async def create_production(
     request: Request,
     production_data: ProductionCreate,
@@ -172,7 +172,7 @@ async def update_production(
 
 
 @router.get("/")
-# @limiter.limit("200/minute")  # Read operations limit - TODO: Enable when slowapi is installed
+@limiter.limit("200/minute")  # Read operations limit
 async def get_productions(
     request: Request,
     skip: int = 0,

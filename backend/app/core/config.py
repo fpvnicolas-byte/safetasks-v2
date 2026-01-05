@@ -16,3 +16,12 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+if settings.secret_key == "your-secret-key-here-change-in-production":
+    import logging
+    # Create a logger specifically for config to ensure it prints
+    logger = logging.getLogger("app.core.config")
+    logger.warning("\n" + "!" * 60)
+    logger.warning("🚨 SECURITY ALERT: You are using the default SECRET_KEY! 🚨")
+    logger.warning("Please set SECRET_KEY in your .env file before deploying.")
+    logger.warning("!" * 60 + "\n")
