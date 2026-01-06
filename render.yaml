@@ -19,7 +19,7 @@ services:
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
       - key: FRONTEND_URL
-        value: http://localhost:3000
+        value: https://safetasks-frontend.onrender.com
       - key: LOG_LEVEL
         value: INFO
       - key: TRIAL_PERIOD_DAYS
@@ -35,7 +35,7 @@ services:
     startCommand: npm start
     envVars:
       - key: NEXT_PUBLIC_API_URL
-        value: http://localhost:8000
+        value: https://safetasks-backend.onrender.com
     rootDir: frontend
 
 # List Render Postgres databases here
