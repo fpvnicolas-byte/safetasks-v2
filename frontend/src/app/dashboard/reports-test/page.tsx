@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { FileText, Download, AlertCircle, CheckCircle, Receipt } from 'lucide-react';
-import { dashboardApi, productionsApi } from '../../lib/api';
+import { dashboardApi, productionsApi } from '../../../lib/api';
 
 export default function ReportsTestPage() {
   const [isGenerating, setIsGenerating] = useState(false);

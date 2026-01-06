@@ -3,23 +3,23 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, MapPin, Users, Package, User, FileText, X } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../../components/ui/alert-dialog';
-import { productionsApi, servicesApi, usersApi, clientsApi } from '../../lib/api';
-import { formatCurrency } from '../../lib/utils';
-import { Button } from '../../components/ui/button';
-import { Input } from '../../components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../../../components/ui/alert-dialog';
+import { productionsApi, servicesApi, usersApi, clientsApi } from '../../../lib/api';
+import { formatCurrency } from '../../../lib/utils';
+import { Button } from '../../../components/ui/button';
+import { Input } from '../../../components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { useSWRConfig } from 'swr';
 import { toast } from 'sonner';
 import { usePrivacy } from '../layout';
 
 // Componentes refatorados
-import { ProductionHeader } from '../../components/productions/sections/ProductionHeader';
-import { ProductionFilters } from '../../components/productions/sections/ProductionFilters';
-import { ProductionEditSheet } from '../../components/productions/sections/ProductionEditSheet';
-import { ProductionGrid } from '../../components/productions/sections/ProductionGrid';
-import { ProductionCardSkeleton } from '../../components/ui/production-card-skeleton';
+import { ProductionHeader } from '../../../components/productions/sections/ProductionHeader';
+import { ProductionFilters } from '../../../components/productions/sections/ProductionFilters';
+import { ProductionEditSheet } from '../../../components/productions/sections/ProductionEditSheet';
+import { ProductionGrid } from '../../../components/productions/sections/ProductionGrid';
+import { ProductionCardSkeleton } from '../../../components/ui/production-card-skeleton';
 
 // Interfaces baseadas nos schemas do backend
 interface ProductionCrewMember {

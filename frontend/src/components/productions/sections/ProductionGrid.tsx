@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Badge } from '../ui/badge';
-import { Button } from '../ui/button';
+import { Badge } from '../../ui/badge';
+import { Button } from '../../ui/button';
 import { Calendar, CreditCard, DollarSign, TrendingUp, Trash2, Edit, Download, FileText, ChevronDown } from 'lucide-react';
-import { formatCurrency } from '../lib/utils';
+import { formatCurrency } from '../../../lib/utils';
 
 // Interface simplificada para o grid
 interface Production {

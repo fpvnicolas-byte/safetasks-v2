@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Minimal config - let Next.js handle everything
+  // Clean config - using relative imports that work everywhere
 };
 
 export default nextConfig;
