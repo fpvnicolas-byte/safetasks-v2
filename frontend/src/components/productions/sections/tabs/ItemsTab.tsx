@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { Package, Plus, X } from 'lucide-react';
-import { Button } from ../../components/ui/button';
-import { Input } from ../../components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ../../components/ui/select';
-import { servicesApi, productionsApi } from '../../lib/api';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { servicesApi, productionsApi } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { useSWRConfig } from 'swr';
 import { toast } from 'sonner';

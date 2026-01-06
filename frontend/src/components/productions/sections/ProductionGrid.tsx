@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Badge } from ../../components/ui/badge';
-import { Button } from ../../components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Calendar, CreditCard, DollarSign, TrendingUp, Trash2, Edit, Download, FileText, ChevronDown } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 

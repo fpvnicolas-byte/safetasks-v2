@@ -1,12 +1,12 @@
 'use client';
 
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from ../../components/ui/dialog';
-import { Button } from ../../components/ui/button';
-import { Badge } from ../../components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Film, DollarSign, Flag, MapPin, Users, Calendar, Clock, ExternalLink } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
-import { useDesignTokens } from '../../lib/hooks/use-design-tokens';
+import { useDesignTokens } from '@/lib/hooks/use-design-tokens';
 
 const paymentMethodLabels: Record<string, string> = {
   pix: 'PIX',
