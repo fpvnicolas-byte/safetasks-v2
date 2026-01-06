@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight, Calendar, Film, DollarSign, Flag } from 'lucide-react';
-import { productionsApi } from '../../../lib/api';
+import { productionsApi } from '../../lib/api';
 import { useSWRConfig } from 'swr';
 import useSWR from 'swr';
-import ProductionQuickView from '../../../components/calendar/ProductionQuickView';
+import ProductionQuickView from '../../components/calendar/ProductionQuickView';
 import { usePrivacy } from '../layout';
 
 // Full interface matching ProductionQuickView
