@@ -51,7 +51,7 @@ class BillingService:
         if current_count >= limits["max_collaborators"]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Limite de colaboradores atingido para o plano {plan.value}. (Máx: {limits["max_collaborators"]})")
+                detail=f"Limite de colaboradores atingido para o plano {plan.value}. (Máx: {limits['max_collaborators']})")
 
     @staticmethod
     async def check_client_limit(org_id: int, db: AsyncSession) -> None:
@@ -74,7 +74,7 @@ class BillingService:
         if current_count >= limits["max_clients"]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Limite de clientes atingido para o plano {plan.value}. (Máx: {limits["max_clients"]})")
+                detail=f"Limite de clientes atingido para o plano {plan.value}. (Máx: {limits['max_clients']})")
 
     @staticmethod
     async def handle_stripe_webhook_event(event: stripe.Event, db: AsyncSession):
