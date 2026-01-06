@@ -1,35 +1,35 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: 'standalone',
-
-  // Desativa o worker que consome muita RAM no Render
+  // 1. Resolve o erro de memória e workers
   experimental: {
     webpackBuildWorker: false,
   },
 
-  // Configuração Turbopack para resolver conflitos com webpack
+  // 2. Silencia o erro do Turbopack v. Webpack
+  // Adicionando um objeto vazio para o turbopack, o Next 16 entende que
+  // ele deve aceitar as configurações legadas sem travar.
   turbopack: {},
 
-  // Configuração de Imagens corrigida
+  // 3. Imagens
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
         hostname: '**',
       },
     ],
-    unoptimized: true,
   },
 
-  // Ignora verificações durante o build para economizar memória e tempo
+  // 4. Se você precisar ignorar o Lint no build no Next 16, 
+  // agora você deve usar o comando no terminal ou ignorar via TypeScript:
   typescript: {
     ignoreBuildErrors: true,
   },
 
-  compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
-  },
+  // 5. Mantém o output para deploy no Render/Railway
+  output: 'standalone',
 };
 
 export default nextConfig;
