@@ -14,6 +14,13 @@ class Settings(BaseSettings):
     frontend_url: str = os.getenv("FRONTEND_URL", "http://localhost:3000")
     trial_period_days: int = int(os.getenv("TRIAL_PERIOD_DAYS", "7")) # Default to 7 days
 
+    @property
+    def async_database_url(self) -> str:
+        """Convert database URL to async format for SQLAlchemy."""
+        if self.database_url.startswith("postgresql://"):
+            return self.database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return self.database_url
+
     class Config:
         env_file = ".env"
         case_sensitive = False
