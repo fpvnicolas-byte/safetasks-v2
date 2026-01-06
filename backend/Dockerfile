@@ -11,13 +11,13 @@ RUN pip install poetry
 RUN poetry config virtualenvs.create false
 
 # Copy dependency files first for better caching
-COPY backend/pyproject.toml backend/poetry.lock ./
+COPY pyproject.toml poetry.lock ./
 
 # Install dependencies
 RUN poetry install --only=main --no-root --no-interaction --no-ansi
 
 # Copy the rest of the application
-COPY backend/ ./
+COPY . ./
 
 # Create non-root user
 RUN useradd --create-home --shell /bin/bash app
