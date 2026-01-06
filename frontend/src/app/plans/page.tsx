@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Film, Check, ArrowRight, Shield, Zap, Users, Building2 } from 'lucide-react';
 import { Footer } from '../../components/Footer';
-import { organizationsApi } from '../../../lib/api';
+import { organizationsApi } from './src/lib/api';
 import { toast } from 'sonner';
 
 export default function PlansPage() {

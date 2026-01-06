@@ -5,8 +5,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Film, DollarSign, Flag, MapPin, Users, Calendar, Clock, ExternalLink } from 'lucide-react';
-import { formatCurrency } from '../../lib/utils';
-import { useDesignTokens } from '../../lib/hooks/use-design-tokens';
+import { formatCurrency } from './src/lib/utils';
+import { useDesignTokens } from './src/lib/hooks/use-design-tokens';
 
 const paymentMethodLabels: Record<string, string> = {
   pix: 'PIX',

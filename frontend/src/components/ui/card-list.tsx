@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatCurrency } from '../../lib/utils';
+import { formatCurrency } from './src/lib/utils';
 
 interface CardListItemProps {
   id: number;
