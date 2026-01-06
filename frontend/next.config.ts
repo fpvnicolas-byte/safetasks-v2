@@ -1,10 +1,9 @@
 import type { NextConfig } from "next";
-import path from 'path';
 
 const nextConfig: NextConfig = {
-  /* config options here */
   webpack: (config) => {
-    config.resolve.alias['@'] = path.join(process.cwd(), 'src');
+    // Add alias for @ to point to src directory
+    config.resolve.alias['@'] = config.resolve.alias['@'] || './src';
     return config;
   },
 };
