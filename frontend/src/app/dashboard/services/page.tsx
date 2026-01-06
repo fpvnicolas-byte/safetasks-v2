@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Plus, Search, Package, Wrench, Coins } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,15 +12,15 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '../../../components/ui/alert-dialog';
-import { servicesApi } from '../../../lib/api';
-import { Button } from '../../../components/ui/button';
-import { Input } from '../../../components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
-import { Textarea } from '../../../components/ui/textarea';
+} from '@/components/ui/alert-dialog';
+import { servicesApi } from '@/lib/api';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { useSWRConfig } from 'swr';
 import { toast } from 'sonner';
-import { CardList } from '../../../components/ui/card-list';
+import { CardList } from '@/components/ui/card-list';
 import { usePrivacy } from '../layout';
 
 // Interface com tipagem rigorosa

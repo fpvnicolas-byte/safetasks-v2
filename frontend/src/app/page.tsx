@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Film, Check, ArrowRight, Shield, Zap, Users } from 'lucide-react';
-import { Footer } from '../../components/Footer';
+import { Footer } from '../../../components/Footer';
 
 export default function LandingPage() {
   return (

@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { authApi } from '../../lib/api';
-import { AdminDashboard } from '../../components/dashboard/AdminDashboard';
-import { CrewDashboard } from '../../components/dashboard/CrewDashboard';
+import { authApi } from '@/lib/api';
+import { AdminDashboard } from '@/components/dashboard/AdminDashboard';
+import { CrewDashboard } from '@/components/dashboard/CrewDashboard';
 
 export default function DashboardPage() {
   const [role, setRole] = useState<string | null>(null);

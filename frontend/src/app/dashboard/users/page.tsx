@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Plus, Edit, Search, X, Save, User, Mail, Shield, UserCheck, UserX } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,12 +13,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '../../../components/ui/alert-dialog';
-import { usersApi } from '../../../lib/api';
-import { Button } from '../../../components/ui/button';
-import { Input } from '../../../components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
-import { Badge } from '../../../components/ui/badge';
+} from '@/components/ui/alert-dialog';
+import { usersApi } from '@/lib/api';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { useSWRConfig } from 'swr';
 import { toast } from 'sonner';
 
