@@ -1,49 +1,25 @@
+# List services *except* Render Postgres databases here
 services:
-  # PostgreSQL Database
-  - type: pserv
-    name: safetasks-db
-    env: postgres
-    plan: free
-    # Render will auto-generate DATABASE_URL
-
-  # Redis Cache (Optional)
-  - type: redis
-    name: safetasks-redis
-    plan: free
-    # Render will auto-generate REDIS_URL
-
   # Backend API (FastAPI)
   - type: web
     name: safetasks-backend
-    env: python
+    runtime: python
     plan: free
-    buildCommand: |
-      pip install poetry &&
-      poetry config virtualenvs.create false &&
-      poetry install --only=main --no-dev
-    startCommand: poetry run uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    buildCommand: "pip install poetry && poetry config virtualenvs.create false && poetry install --only=main --no-dev"
+    startCommand: "poetry run uvicorn app.main:app --host 0.0.0.0 --port $PORT"
     envVars:
       - key: DATABASE_URL
-        fromService:
-          type: pserv
+        fromDatabase:
           name: safetasks-db
           property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: safetasks-redis
-          property: connectionString
       - key: SECRET_KEY
-        value: generate-a-secure-key-here-change-in-production
+        generateValue: true
       - key: STRIPE_SECRET_KEY
-        value: sk_test_your-stripe-secret-key-here
+        sync: false
       - key: STRIPE_WEBHOOK_SECRET
-        value: whsec_your-webhook-secret-here
+        sync: false
       - key: FRONTEND_URL
-        fromService:
-          type: web
-          name: safetasks-frontend
-          property: host
+        value: https://safetasks-frontend.onrender.com
       - key: LOG_LEVEL
         value: INFO
       - key: TRIAL_PERIOD_DAYS
@@ -53,14 +29,17 @@ services:
   # Frontend (Next.js)
   - type: web
     name: safetasks-frontend
-    env: node
+    runtime: node
     plan: free
     buildCommand: npm install && npm run build
     startCommand: npm start
     envVars:
       - key: NEXT_PUBLIC_API_URL
-        fromService:
-          type: web
-          name: safetasks-backend
-          property: host
+        value: https://safetasks-backend.onrender.com
     rootDir: frontend
+
+# List Render Postgres databases here
+databases:
+  - name: safetasks-db
+    plan: free
+    # Render will auto-generate DATABASE_URL
