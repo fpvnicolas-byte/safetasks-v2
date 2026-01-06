@@ -4,8 +4,8 @@ import { FileText, Plus, X } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { productionsApi } from '@/lib/api';
-import { formatCurrency } from '@/lib/utils';
+import { productionsApi } from '../lib/api';
+import { formatCurrency } from '../lib/utils';
 import { useSWRConfig } from 'swr';
 import { toast } from 'sonner';
 
