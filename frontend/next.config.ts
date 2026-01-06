@@ -1,23 +1,62 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
-  webpack: (config, { isServer }) => {
-    // Força a resolução de aliases em todos os ambientes
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      '@': require('path').resolve(__dirname, 'src'),
-    };
+  // Optimize for Railway deployment
+  output: 'standalone',
 
-    // Configurações adicionais para builds de produção
-    if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        path: false,
-      };
+  // Configure webpack aliases
+  webpack: (config, { isServer }) => {
+    // Configure @ alias to point to src directory
+    // This should work in both local and Railway environments
+    if (!config.resolve) {
+      config.resolve = {};
     }
 
+    if (!config.resolve.alias) {
+      config.resolve.alias = {};
+    }
+
+    // Set @ to src directory - this is the standard Next.js way
+    config.resolve.alias['@'] = path.join(process.cwd(), 'src');
+
     return config;
+  },
+
+  // Optimize images
+  images: {
+    unoptimized: false, // Keep optimization enabled
+    domains: ['localhost'],
+  },
+
+  // Enable experimental features for better Railway compatibility
+  experimental: {
+    // Improve build performance
+    webpackBuildWorker: false,
+  },
+
+  // Production optimizations
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
+
+  // Headers for security
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+        ],
+      },
+    ];
   },
 };
 
