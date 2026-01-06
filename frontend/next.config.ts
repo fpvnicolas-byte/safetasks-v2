@@ -4,7 +4,6 @@ import path from "path";
 const nextConfig: NextConfig = {
   webpack: (config, { isServer }) => {
     // In Render, rootDir is 'frontend', so process.cwd() returns 'frontend/'
-    // This is the most reliable way to get the root directory
     const rootDir = process.cwd();
     const srcPath = path.resolve(rootDir, 'src');
     
@@ -13,29 +12,30 @@ const nextConfig: NextConfig = {
     }
     
     // CRITICAL: Configure @/ alias to match tsconfig.json paths
-    // This MUST be set correctly for Webpack to resolve @/ imports
+    // Webpack 5 requires explicit alias configuration
     if (!config.resolve.alias) {
       config.resolve.alias = {};
     }
     
     // Set alias - @ points to src/ directory
-    // So @/lib/api resolves to src/lib/api
+    // This is the KEY configuration that makes @/lib/api work
     config.resolve.alias['@'] = srcPath;
+    
+    // Also configure the pattern @/* for better compatibility
+    // Some Webpack versions need this explicit pattern matching
+    config.resolve.alias['@/*'] = path.join(srcPath, '*');
     
     // CRITICAL: Configure modules resolution
     // Webpack needs to look in src/ when resolving @/ imports
     // The order matters - src/ must come before node_modules
-    const existingModules = Array.isArray(config.resolve.modules) 
-      ? config.resolve.modules 
-      : ['node_modules'];
+    if (!Array.isArray(config.resolve.modules)) {
+      config.resolve.modules = ['node_modules'];
+    }
     
-    // Remove srcPath if it already exists to avoid duplicates
-    const filteredModules = existingModules.filter((m: string) => m !== srcPath);
-    
-    config.resolve.modules = [
-      srcPath,        // Look in src/ first (CRITICAL for @/ imports)
-      ...filteredModules,
-    ];
+    // Ensure src/ is in modules array (if not already)
+    if (!config.resolve.modules.includes(srcPath)) {
+      config.resolve.modules = [srcPath, ...config.resolve.modules];
+    }
     
     // Ensure extensions are configured
     if (!config.resolve.extensions) {
