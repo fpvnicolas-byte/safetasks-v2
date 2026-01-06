@@ -15,6 +15,7 @@ from app.api.v1.endpoints.production_items import router as production_items_rou
 from app.api.v1.endpoints.productions import router as productions_router
 from app.api.v1.endpoints.services import router as services_router
 from app.api.v1.endpoints.users import router as users_router
+from app.api.v1.endpoints.webhooks import router as webhooks_router
 from app.core.logging_config import setup_logging
 from app.db.session import get_db
 
@@ -111,6 +112,7 @@ app.include_router(dashboard_router, prefix="/api/v1/dashboard", tags=["dashboar
 app.include_router(production_crew_router, prefix="/api/v1", tags=["production-crew"])
 app.include_router(production_items_router, prefix="/api/v1", tags=["production-items"])
 app.include_router(expenses_router, prefix="/api/v1", tags=["expenses"])
+app.include_router(webhooks_router, prefix="/api/v1/webhooks", tags=["webhooks"])
 
 @app.get("/")
 async def root():

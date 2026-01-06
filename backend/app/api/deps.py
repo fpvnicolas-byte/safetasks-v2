@@ -6,7 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.db.session import get_db
-from app.models.user import User
+from app.models.user import User, Organization
+from app.services.billing_service import BillingService
 
 security = HTTPBearer()
 
@@ -53,3 +54,30 @@ async def get_current_active_admin(
         )
 
     return current_user
+
+
+async def check_subscription(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+) -> Organization:
+    """
+    Ensure the user's organization has an active subscription or trial.
+    Returns the organization if valid, otherwise raises 402 Payment Required.
+    """
+    result = await db.execute(
+        select(Organization).where(Organization.id == current_user.organization_id)
+    )
+    org = result.scalar_one_or_none()
+
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    is_valid = await BillingService.get_organization_license_status(org)
+
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_402_PAYMENT_REQUIRED,
+            detail="Subscription required. Please update your payment method."
+        )
+
+    return org

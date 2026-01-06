@@ -24,6 +24,7 @@ python-jose = {extras = ["cryptography"], version = "^3.5.0"}
 python-multipart = "^0.0.21"
 slowapi = "^0.1.9"
 redis = "^5.0.1"
+stripe = "^14.1.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.3"

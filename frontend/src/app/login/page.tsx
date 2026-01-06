@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Cookies from 'js-cookie';
@@ -15,7 +15,39 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const router = useRouter();
+
+  // Verificar se usuário já está logado ao carregar a página
+  useEffect(() => {
+    const checkIfAlreadyLoggedIn = async () => {
+      try {
+        // Verificar se há token armazenado
+        const token = localStorage.getItem('token');
+
+        if (!token) {
+          setCheckingAuth(false);
+          return;
+        }
+
+        // Tentar validar o token fazendo uma chamada protegida
+        await authApi.getCurrentUser();
+
+        // Se chegou aqui, o token é válido - redirecionar para dashboard
+        router.push('/dashboard');
+
+      } catch (error) {
+        // Token inválido ou expirado - limpar tokens e permitir login
+        console.log('Token inválido detectado, limpando...');
+        localStorage.removeItem('token');
+        // Remover cookie também se existir
+        Cookies.remove('token');
+        setCheckingAuth(false);
+      }
+    };
+
+    checkIfAlreadyLoggedIn();
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,6 +90,18 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  // Mostrar loading enquanto verifica autenticação
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-950">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto mb-4"></div>
+          <p className="text-slate-400">Verificando autenticação...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-950 p-4 relative overflow-hidden font-sans">

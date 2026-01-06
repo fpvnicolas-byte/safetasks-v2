@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation'; // Importante: useRouter adicionado
 import {
   BarChart3,
   Calendar,
@@ -14,17 +14,34 @@ import {
   Eye,
   EyeOff,
   Settings,
+  X
 } from 'lucide-react';
-import { Toaster } from 'sonner';
-import { authApi } from '@/lib/api';
+import { Toaster, toast } from 'sonner';
+import { authApi, organizationsApi } from '@/lib/api';
 import { useDesignTokens } from '@/lib/hooks/use-design-tokens';
 import { AccessibilityPanel } from '@/components/dev/accessibility-panel';
+import { SubscriptionGuard } from '@/components/SubscriptionGuard';
 
 interface User {
   id: number;
   email: string;
   full_name: string;
   role: string;
+}
+
+interface OrganizationSettings {
+  id: number;
+  name: string;
+  cnpj: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  default_tax_rate: number;
+  subscription_plan: string;
+  subscription_status: string;
+  trial_ends_at: string | null; // ISO string
+  subscription_ends_at: string | null; // ISO string
+  billing_id: string | null;
 }
 
 const navigation = [
@@ -61,7 +78,10 @@ export default function DashboardLayout({
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [privacyMode, setPrivacyMode] = useState(false);
+  const [organizationSettings, setOrganizationSettings] = useState<OrganizationSettings | null>(null);
+  const [showTrialBanner, setShowTrialBanner] = useState(true);
   const pathname = usePathname();
+  const router = useRouter(); // Importante: router inicializado aqui!
 
   // Design tokens para consistência visual
   const {
@@ -89,24 +109,49 @@ export default function DashboardLayout({
   const shouldShowPrivacyButton = user?.role === 'admin' && financialRoutes.includes(pathname);
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchUserAndOrgSettings = async () => {
       try {
         const userData = await authApi.getCurrentUser();
         setUser(userData);
+
+        const orgSettings = await organizationsApi.getSettings();
+        setOrganizationSettings(orgSettings);
+
+        // Check if subscription was successful and show a toast
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('subscription') === 'success') {
+          toast.success("Assinatura realizada com sucesso! Bem-vindo ao seu novo plano.");
+          // Limpa o URL: Usar window.history.replaceState para remover o parâmetro 'subscription' sem recarregar a página
+          const newUrl = new URL(window.location.href);
+          newUrl.searchParams.delete('subscription');
+          window.history.replaceState({}, '', newUrl.toString()); // Sintaxe corrigida
+        }
+
       } catch (error) {
-        console.error('Failed to fetch user:', error);
+        console.error('Failed to fetch user or organization settings:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUser();
-  }, []);
+    fetchUserAndOrgSettings();
+  }, [pathname, router]); // Adicionado router às dependências
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     window.location.href = '/login';
   };
+
+  const trialDaysRemaining = useMemo(() => {
+    if (organizationSettings && organizationSettings.subscription_status === 'trialing' && organizationSettings.trial_ends_at) {
+      const trialEndDate = new Date(organizationSettings.trial_ends_at);
+      const today = new Date();
+      const diffTime = trialEndDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return diffDays > 0 ? diffDays : 0;
+    }
+    return null;
+  }, [organizationSettings]);
 
   // Dynamic Background Orbs Configuration
   // Fixed: Moved before conditional returns to follow Rules of Hooks
@@ -306,9 +351,7 @@ export default function DashboardLayout({
                           fontWeight: '500',
                           transition: transitions.normal,
                         }}
-                      >
-                        {item.name}
-                      </span>
+                      >{item.name}</span>
                     </Link>
                   </li>
                 );
@@ -391,119 +434,140 @@ export default function DashboardLayout({
 
       {/* Main content */}
       <main id="main-content" className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <header
-          className="px-6 py-4"
-          style={{
-            backgroundColor: colors.glass.medium,
-            backdropFilter: 'blur(12px)',
-            borderBottom: `1px solid ${colors.glass.border}`,
-            boxShadow: shadows.glass.soft,
-          }}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <h1
-                className="text-2xl font-bold"
-                style={{
-                  color: colors.slate[200],
-                  fontFamily: 'Inter, system-ui, sans-serif',
-                }}
-              >
-                {navigation.find(item => item.href === pathname)?.name || 'Dashboard'}
-              </h1>
-              <p
-                className="text-sm mt-1"
-                style={{
-                  color: colors.slate[400],
-                  fontFamily: 'Inter, system-ui, sans-serif',
-                }}
-              >
-                Bem-vindo de volta, {user?.full_name?.split(' ')[0] || 'usuário'}
-              </p>
+        <SubscriptionGuard>
+          {/* Trial Status Banner */}
+          {showTrialBanner && trialDaysRemaining !== null && trialDaysRemaining > 0 && (
+            <div
+              className="bg-yellow-800/20 text-yellow-200 text-sm py-2 px-6 flex items-center justify-between"
+              style={{
+                borderBottom: `1px solid ${colors.glass.border}`,
+              }}
+            >
+              <span>
+                Seu período de teste termina em <strong className="font-bold">{trialDaysRemaining} {trialDaysRemaining === 1 ? "dia" : "dias"}</strong>.
+                <Link href="/plans" className="ml-2 underline hover:no-underline font-medium">
+                  Atualize seu plano agora!
+                </Link>
+              </span>
+              <button onClick={() => setShowTrialBanner(false)} className="p-1 rounded-full hover:bg-yellow-700/30 transition-colors">
+                <X className="h-4 w-4 text-yellow-200" />
+              </button>
             </div>
-            <div className="flex items-center space-x-4">
-              {shouldShowPrivacyButton && (
-                <button
-                  onClick={() => setPrivacyMode(!privacyMode)}
-                  className="p-2 rounded-lg focus:outline-none"
+          )}
+          {/* Header */}
+          <header
+            className="px-6 py-4"
+            style={{
+              backgroundColor: colors.glass.medium,
+              backdropFilter: 'blur(12px)',
+              borderBottom: `1px solid ${colors.glass.border}`,
+              boxShadow: shadows.glass.soft,
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h1
+                  className="text-2xl font-bold"
                   style={{
-                    ...focusRing(colors.primary[500]),
-                    backgroundColor: colors.glass.light,
-                    transition: transitions.normal,
-                    borderRadius: borderRadius.lg,
+                    color: colors.slate[200],
+                    fontFamily: 'Inter, system-ui, sans-serif',
                   }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = colors.glass.medium;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = colors.glass.light;
-                  }}
-                  title={privacyMode ? 'Desativar modo privacidade' : 'Ativar modo privacidade'}
-                  aria-label={privacyMode ? 'Desativar modo privacidade' : 'Ativar modo privacidade'}
-                  aria-pressed={privacyMode}
                 >
-                  {privacyMode ? (
-                    <EyeOff
-                      className="h-5 w-5"
-                      style={{ color: colors.slate[400] }}
-                      aria-hidden="true"
-                    />
-                  ) : (
-                    <Eye
-                      className="h-5 w-5"
-                      style={{ color: colors.slate[400] }}
-                      aria-hidden="true"
-                    />
-                  )}
-                </button>
-              )}
-              <div className="text-right">
+                  {navigation.find(item => item.href === pathname)?.name || 'Dashboard'}
+                </h1>
                 <p
-                  className="text-sm"
+                  className="text-sm mt-1"
                   style={{
                     color: colors.slate[400],
                     fontFamily: 'Inter, system-ui, sans-serif',
                   }}
                 >
-                  {new Date().toLocaleDateString('pt-BR', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
+                  Bem-vindo de volta, {user?.full_name?.split(' ')[0] || 'usuário'}
                 </p>
               </div>
+              <div className="flex items-center space-x-4">
+                {shouldShowPrivacyButton && (
+                  <button
+                    onClick={() => setPrivacyMode(!privacyMode)}
+                    className="p-2 rounded-lg focus:outline-none"
+                    style={{
+                      ...focusRing(colors.primary[500]),
+                      backgroundColor: colors.glass.light,
+                      transition: transitions.normal,
+                      borderRadius: borderRadius.lg,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = colors.glass.medium;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = colors.glass.light;
+                    }}
+                    title={privacyMode ? 'Desativar modo privacidade' : 'Ativar modo privacidade'}
+                    aria-label={privacyMode ? 'Desativar modo privacidade' : 'Ativar modo privacidade'}
+                    aria-pressed={privacyMode}
+                  >
+                    {privacyMode ? (
+                      <EyeOff
+                        className="h-5 w-5"
+                        style={{ color: colors.slate[400] }}
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <Eye
+                        className="h-5 w-5"
+                        style={{ color: colors.slate[400] }}
+                        aria-hidden="true"
+                      />
+                    )}
+                  </button>
+                )}
+                <div className="text-right">
+                  <p
+                    className="text-sm"
+                    style={{
+                      color: colors.slate[400],
+                      fontFamily: 'Inter, system-ui, sans-serif',
+                    }}
+                  >
+                    {new Date().toLocaleDateString('pt-BR', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </p>
+                </div>
+              </div>
             </div>
-          </div>
-        </header>
+          </header>
 
-        {/* Page content */}
-        <PrivacyContext.Provider value={{ privacyMode, setPrivacyMode }}>
-          <div className="flex-1 overflow-auto">
-            {children}
-          </div>
-        </PrivacyContext.Provider>
+          {/* Page content */}
+          <PrivacyContext.Provider value={{ privacyMode, setPrivacyMode }}>
+            <div className="flex-1 overflow-auto">
+              {children}
+            </div>
+          </PrivacyContext.Provider>
 
-        {/* Toast Notifications */}
-        <Toaster
-          position="bottom-center"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: 'rgba(15, 23, 42, 0.8)',
-              backdropFilter: 'blur(12px)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              color: '#f1f5f9',
-              fontSize: '14px',
-              fontWeight: '500',
-            },
-            className: 'border border-white/10',
-          }}
-        />
+          {/* Toast Notifications */}
+          <Toaster
+            position="bottom-center"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: 'rgba(15, 23, 42, 0.8)',
+                backdropFilter: 'blur(12px)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                color: '#f1f5f9',
+                fontSize: '14px',
+                fontWeight: '500',
+              },
+              className: 'border border-white/10',
+            }}
+          />
 
-        {/* Painel de Acessibilidade (apenas desenvolvimento) */}
-        <AccessibilityPanel />
+          {/* Painel de Acessibilidade (apenas desenvolvimento) */}
+          <AccessibilityPanel />
+        </SubscriptionGuard>
       </main>
     </div>
   );

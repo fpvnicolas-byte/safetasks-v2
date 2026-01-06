@@ -10,6 +10,7 @@ from app.core.security import get_password_hash
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.auth import UserInvite, UserResponse
+from app.services.billing_service import BillingService
 
 
 class UserUpdateStatus(BaseModel):
@@ -57,6 +58,9 @@ async def invite_crew_member(
             status_code=403,
             detail="Only organization admins can invite crew members"
         )
+
+    # Check plan limits for collaborators
+    await BillingService.check_collaborator_limit(current_user.organization_id, db)
 
     # Check if email already exists
     existing_user = await db.execute(

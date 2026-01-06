@@ -19,6 +19,11 @@ class OrganizationResponse(BaseModel):
     email: Optional[str]
     address: Optional[str]
     default_tax_rate: float
+    subscription_plan: str
+    subscription_status: str
+    trial_ends_at: Optional[datetime]
+    subscription_ends_at: Optional[datetime]
+    billing_id: Optional[str]
     created_at: datetime
 
     class Config:

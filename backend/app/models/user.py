@@ -17,6 +17,13 @@ class Organization(Base):
     default_tax_rate: Mapped[float] = mapped_column(Float, default=0.0)
     created_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now())
 
+    # Subscription Management
+    subscription_plan: Mapped[str] = mapped_column(String, default="free")
+    subscription_status: Mapped[str] = mapped_column(String, default="trialing")
+    trial_ends_at: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
+    subscription_ends_at: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
+    billing_id: Mapped[str] = mapped_column(String, nullable=True) # e.g., Stripe Customer ID
+
     # Relationships
     users = relationship("User", back_populates="organization")
     clients = relationship("Client", back_populates="organization")

@@ -1,15 +1,21 @@
+from datetime import datetime, timedelta
+import logging # Import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
+from app.core.config import settings # Import settings
 # from app.core.rate_limit import limiter  # TODO: Enable when slowapi is installed
 from app.core.security import create_access_token, get_password_hash, verify_password
 from app.db.session import get_db
 from app.models.user import Organization, User
-from app.schemas.auth import Token, UserCreate, UserLogin, UserResponse
+from app.schemas.auth import Token, UserCreate, UserLogin, UserResponse # Ensure all schemas are imported
+from app.core.billing_config import SubscriptionStatus # Import for status check
 
 router = APIRouter()
+logger = logging.getLogger(__name__) # Initialize logger
 
 
 @router.post("/register-owner", response_model=UserResponse)
@@ -21,18 +27,32 @@ async def register_owner(
 ) -> UserResponse:
     """Register a new organization owner (tenant admin)."""
 
+    logger.debug("Attempting to register new owner.") # Debug log
+
     # Check if email already exists
     existing_user = await db.execute(
         select(User).where(User.email == user_data.email)
     )
     if existing_user.scalar_one_or_none():
+        logger.debug(f"Email {user_data.email} already registered.") # Debug log
         raise HTTPException(
             status_code=400,
             detail="Email already registered"
         )
 
     # Create new organization
-    organization = Organization(name=user_data.organization_name)
+    organization = Organization(
+        name=user_data.organization_name,
+        subscription_status=SubscriptionStatus.TRIALING # AGORA DEFINIMOS EXPLICITAMENTE!
+    )
+    
+    logger.debug(f"New organization created with status: {organization.subscription_status}") # Debug log
+    # Set trial_ends_at for new organizations on trialing status (MUST be before db.add)
+    # A condição AGORA será verdadeira!
+    if organization.subscription_status == SubscriptionStatus.TRIALING:
+        organization.trial_ends_at = datetime.utcnow() + timedelta(days=settings.trial_period_days)
+        logger.debug(f"Trial ends at set to: {organization.trial_ends_at}") # Debug log
+
     db.add(organization)
     await db.flush()  # Get the organization ID
 
@@ -49,6 +69,7 @@ async def register_owner(
     await db.commit()
     await db.refresh(user)
 
+    logger.debug(f"User {user.email} registered with organization {organization.id}") # Debug log
     return UserResponse.from_orm(user)
 
 
@@ -61,6 +82,7 @@ async def login(
 ) -> Token:
     """Authenticate user and return JWT token."""
 
+    logger.debug(f"Attempting login for user: {user_credentials.username}") # Debug log
     # Get user by email
     result = await db.execute(
         select(User).where(User.email == user_credentials.username)
@@ -69,6 +91,7 @@ async def login(
 
     # Check if user exists and password is correct
     if not user or not verify_password(user_credentials.password, user.hashed_password):
+        logger.debug(f"Login failed for user {user_credentials.username}: Incorrect credentials.") # Debug log
         raise HTTPException(
             status_code=400,
             detail="Incorrect email or password"
@@ -77,4 +100,5 @@ async def login(
     # Create access token
     access_token = create_access_token(data={"sub": str(user.id)})
 
+    logger.debug(f"Login successful for user: {user.email}") # Debug log
     return Token(access_token=access_token, token_type="bearer")

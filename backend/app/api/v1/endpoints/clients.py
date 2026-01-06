@@ -4,11 +4,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_active_admin
+from app.api.deps import get_current_active_admin, check_subscription
 from app.db.session import get_db
 from app.models.client import Client
-from app.models.user import User
+from app.models.user import User, Organization
 from app.schemas.client import ClientCreate, ClientResponse
+from app.services.billing_service import BillingService
 
 router = APIRouter()
 
@@ -17,9 +18,13 @@ router = APIRouter()
 async def create_client(
     client_data: ClientCreate,
     current_user: User = Depends(get_current_active_admin),
+    _org: Organization = Depends(check_subscription),
     db: AsyncSession = Depends(get_db)
 ) -> ClientResponse:
     """Create a new client for the current user's organization."""
+
+    # Check subscription limits
+    await BillingService.check_client_limit(current_user.organization_id, db)
 
     # Create client linked to current user's organization
     client = Client(

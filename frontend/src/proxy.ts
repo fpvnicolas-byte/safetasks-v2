@@ -4,10 +4,18 @@ import type { NextRequest } from 'next/server';
 export function proxy(request: NextRequest) {
   // Get the pathname of the request (e.g. /dashboard, /login)
   const path = request.nextUrl.pathname;
+  const searchParams = request.nextUrl.searchParams;
 
   // Define public paths that don't require authentication
   const publicPaths = ['/login'];
   const isPublicPath = publicPaths.includes(path);
+
+  // SPECIAL CASE: Allow access to dashboard with subscription=success
+  // This allows users returning from Stripe checkout to access the dashboard
+  // even if their token expired during the checkout process
+  if (path === '/dashboard' && searchParams.get('subscription') === 'success') {
+    return NextResponse.next();
+  }
 
   // If accessing a public path, allow the request
   if (isPublicPath) {
