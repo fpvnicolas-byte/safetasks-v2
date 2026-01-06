@@ -19,6 +19,8 @@ const nextConfig: NextConfig = {
 
     // Set @ to src directory - this is the standard Next.js way
     config.resolve.alias['@'] = path.join(process.cwd(), 'src');
+    // Add lib alias for compatibility with both @/lib and lib/ imports
+    config.resolve.alias['lib'] = path.join(process.cwd(), 'src/lib');
 
     return config;
   },
