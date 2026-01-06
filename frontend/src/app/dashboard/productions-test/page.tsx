@@ -6,7 +6,7 @@ import { Plus, Search, Filter, Save, Calendar, Trash2, MapPin, CreditCard, Dolla
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { productionsApi, servicesApi, usersApi, clientsApi } from '@/lib/api';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency } from '../../lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, PieChart, Pie, Cell } from 'recharts';
 import { TrendingUp, Receipt, DollarSign, Target, Package, BarChart3, PieChart as PieChartIcon, Users, Activity } from 'lucide-react';
 import { dashboardApi } from '@/lib/api';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency } from '../../lib/utils';
 import { usePrivacy } from '../layout';
 
 interface DashboardData {

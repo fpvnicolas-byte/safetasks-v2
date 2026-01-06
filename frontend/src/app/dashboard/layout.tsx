@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 import { authApi, organizationsApi } from '@/lib/api';
-import { useDesignTokens } from '@/lib/hooks/use-design-tokens';
+import { useDesignTokens } from '../../lib/hooks/use-design-tokens';
 import { AccessibilityPanel } from '@/components/dev/accessibility-panel';
 import { SubscriptionGuard } from '@/components/SubscriptionGuard';
 
