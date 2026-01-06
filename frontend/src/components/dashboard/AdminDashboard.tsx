@@ -2,12 +2,12 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { TrendingUp, Receipt, DollarSign, Target, Package, BarChart3, Activity } from 'lucide-react';
-import { dashboardApi } from './src/lib/api';
-import { formatCurrency } from './src/lib/utils';
-import { usePrivacy } from '../../app/dashboard/layout';
-import { useDesignTokens, useAccessibility } from './src/lib/hooks';
-import { DashboardCardSkeleton } from '../ui/dashboard-card-skeleton';
-import { ChartSection } from '../dashboard/ChartSection';
+import { dashboardApi } from '@/lib/api';
+import { formatCurrency } from '@/lib/utils';
+import { usePrivacy } from '@/app/dashboard/layout';
+import { useDesignTokens, useAccessibility } from '@/lib/hooks';
+import { DashboardCardSkeleton } from '@/components/ui/dashboard-card-skeleton';
+import { ChartSection } from '@/components/dashboard/ChartSection';
 
 interface DashboardData {
     total_revenue?: number;

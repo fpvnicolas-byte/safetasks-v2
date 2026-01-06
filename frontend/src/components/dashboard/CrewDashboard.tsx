@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { Film, DollarSign, Calendar, ArrowRight } from 'lucide-react';
-import { dashboardApi } from './src/lib/api';
-import { formatCurrency } from './src/lib/utils';
-import { useDesignTokens } from './src/lib/hooks';
-import { DashboardCardSkeleton } from '../ui/dashboard-card-skeleton';
+import { dashboardApi } from '@/lib/api';
+import { formatCurrency } from '@/lib/utils';
+import { useDesignTokens } from '@/lib/hooks';
+import { DashboardCardSkeleton } from '@/components/ui/dashboard-card-skeleton';
 import Link from 'next/link';
 
 interface DashboardData {

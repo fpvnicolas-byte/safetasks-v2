@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useDesignTokens } from './src/lib/hooks';
-import { generateAccessibilityReport } from './src/lib/accessibility-tests';
+import { useDesignTokens } from '@/lib/hooks';
+import { generateAccessibilityReport } from '@/lib/accessibility-tests';
 
 interface AccessibilityReport {
   accessibility: {
@@ -87,12 +87,12 @@ export function AccessibilityPanel() {
                 className="text-sm font-mono font-bold"
                 style={{
                   color: report.overallScore >= 90 ? colors.success?.[400] || '#10b981' :
-                         report.overallScore >= 70 ? colors.warning?.[400] || '#f59e0b' :
-                         colors.error?.[400] || '#ef4444'
+                    report.overallScore >= 70 ? colors.warning?.[400] || '#f59e0b' :
+                      colors.error?.[400] || '#ef4444'
                 }}
               >
                 {report.overallScore >= 90 ? '🟢' :
-                 report.overallScore >= 70 ? '🟡' : '🔴'} {report.overallScore}%
+                  report.overallScore >= 70 ? '🟡' : '🔴'} {report.overallScore}%
               </span>
             </div>
             <div className="w-full bg-slate-700 rounded-full h-2">
@@ -108,8 +108,8 @@ export function AccessibilityPanel() {
               <span className="text-slate-400">WCAG AA</span>
               <div className="font-mono font-bold" style={{
                 color: report.accessibility.score >= 90 ? colors.success?.[400] || '#10b981' :
-                       report.accessibility.score >= 70 ? colors.warning?.[400] || '#f59e0b' :
-                       colors.error?.[400] || '#ef4444'
+                  report.accessibility.score >= 70 ? colors.warning?.[400] || '#f59e0b' :
+                    colors.error?.[400] || '#ef4444'
               }}>
                 {report.accessibility.score}%
               </div>
@@ -118,7 +118,7 @@ export function AccessibilityPanel() {
               <span className="text-slate-400">Design System</span>
               <div className="font-mono font-bold" style={{
                 color: report.designSystem.isUsingDesignTokens ? colors.success?.[400] || '#10b981' :
-                       colors.error?.[400] || '#ef4444'
+                  colors.error?.[400] || '#ef4444'
               }}>
                 {report.designSystem.isUsingDesignTokens ? '✅' : '❌'}
               </div>

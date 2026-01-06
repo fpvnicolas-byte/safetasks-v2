@@ -1,11 +1,12 @@
+
 'use client';
 
-import { Input } from '../../../ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
-import { Badge } from '../../../ui/badge';
-import { Button } from '../../../ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Plus, X } from 'lucide-react';
-import { formatCurrency } from './src/lib/utils';
+import { formatCurrency } from '@/lib/utils';
 
 type ProductionStatus = 'draft' | 'proposal_sent' | 'approved' | 'in_progress' | 'completed' | 'canceled';
 
@@ -207,7 +208,7 @@ export function GeneralTab({
                 <div key={index} className="bg-slate-800/30 rounded-lg p-3">
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-slate-50">
-                      {session.date ? new Date(session.date).toLocaleDateString('pt-BR') : 'Data não definida'}
+                      {session.date ? new Date(session.date).toLocaleDateString("pt-BR") : "Data não definida"}
                     </span>
                     {session.location && (
                       <>
@@ -368,7 +369,7 @@ export function GeneralTab({
         </label>
         {isEditing ? (
           <textarea
-            value={editForm.notes || ''}
+            value={editForm.notes || ""}
             onChange={(e) => onEditFormChange({ notes: e.target.value })}
             className="w-full h-24 bg-slate-900/50 border border-slate-700 rounded-md px-3 py-2 text-slate-50 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent resize-none"
             placeholder="Digite observações sobre esta produção..."
@@ -376,7 +377,7 @@ export function GeneralTab({
         ) : (
           <div className="min-h-24 bg-slate-800/30 rounded-md p-3">
             <p className="text-slate-50 whitespace-pre-wrap">
-              {selectedProduction.notes || 'Nenhuma observação cadastrada'}
+              {selectedProduction.notes || "Nenhuma observação cadastrada"}
             </p>
           </div>
         )}
@@ -385,4 +386,3 @@ export function GeneralTab({
     </div>
   );
 }
-

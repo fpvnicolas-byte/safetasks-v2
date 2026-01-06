@@ -1,7 +1,8 @@
+
 'use client';
 
 import { Skeleton } from './skeleton';
-import { useDesignTokens } from './src/lib/hooks/use-design-tokens';
+import { useDesignTokens } from '@/lib/hooks/use-design-tokens';
 
 export function ProductionCardSkeleton() {
   const { spacing, borderRadius, colors } = useDesignTokens();

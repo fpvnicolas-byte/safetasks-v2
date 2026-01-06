@@ -1,14 +1,15 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
 import { Settings, Building, Percent, Save, CreditCard, Calendar, Clock, ArrowUp, X, Receipt, Badge } from 'lucide-react';
-import { Button } from '../../../components/ui/button';
-import { Input } from '../../../components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSWRConfig } from 'swr';
 import { toast } from 'sonner';
-import { organizationsApi } from './src/lib/api';
+import { organizationsApi } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 
 interface OrganizationSettings {
@@ -252,116 +253,116 @@ export default function SettingsPage() {
           <TabsContent value="empresa" className="space-y-6">
             {/* Dados da Empresa */}
             <Card className="bg-slate-950/30 backdrop-blur-2xl border border-white/10">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-slate-50">
-                <Building className="h-5 w-5" />
-                Dados da Empresa
-              </CardTitle>
-              <CardDescription className="text-slate-400">
-                Informações básicas da sua organização
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Nome da Empresa *
-                  </label>
-                  <Input
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Nome da empresa"
-                    className="bg-slate-900/50 border-slate-700"
-                  />
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-slate-50">
+                  <Building className="h-5 w-5" />
+                  Dados da Empresa
+                </CardTitle>
+                <CardDescription className="text-slate-400">
+                  Informações básicas da sua organização
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Nome da Empresa *
+                    </label>
+                    <Input
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="Nome da empresa"
+                      className="bg-slate-900/50 border-slate-700"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      CNPJ
+                    </label>
+                    <Input
+                      value={formData.cnpj}
+                      onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
+                      placeholder="00.000.000/0000-00"
+                      className="bg-slate-900/50 border-slate-700"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Telefone
+                    </label>
+                    <Input
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      placeholder="(11) 99999-9999"
+                      className="bg-slate-900/50 border-slate-700"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Email
+                    </label>
+                    <Input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      placeholder="contato@empresa.com"
+                      className="bg-slate-900/50 border-slate-700"
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-2">
-                    CNPJ
+                    Endereço
                   </label>
                   <Input
-                    value={formData.cnpj}
-                    onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
-                    placeholder="00.000.000/0000-00"
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    placeholder="Rua, número, cidade - UF"
                     className="bg-slate-900/50 border-slate-700"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Telefone
-                  </label>
-                  <Input
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="(11) 99999-9999"
-                    className="bg-slate-900/50 border-slate-700"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Email
-                  </label>
-                  <Input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="contato@empresa.com"
-                    className="bg-slate-900/50 border-slate-700"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Endereço
-                </label>
-                <Input
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  placeholder="Rua, número, cidade - UF"
-                  className="bg-slate-900/50 border-slate-700"
-                />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          {/* Padrões de Negócio */}
-          <Card className="bg-slate-950/30 backdrop-blur-2xl border border-white/10">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-slate-50">
-                <Percent className="h-5 w-5" />
-                Padrões de Negócio
-              </CardTitle>
-              <CardDescription className="text-slate-400">
-                Configurações padrão aplicadas a novas produções
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="max-w-xs">
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Taxa de Imposto Padrão (%)
-                </label>
-                <div className="relative">
-                  <Input
-                    type="number"
-                    step="1"
-                    min="0"
-                    max="100"
-                    value={formData.default_tax_rate}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, ""); // Remove any non-numeric characters
-                      const parsedValue = parseInt(value) || 0;
-                      setFormData({ ...formData, default_tax_rate: parsedValue });
-                    }}
-                    placeholder="0"
-                    className="bg-slate-900/50 border-slate-700 pr-8"
-                  />
-                  <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-sm">%</span>
+            {/* Padrões de Negócio */}
+            <Card className="bg-slate-950/30 backdrop-blur-2xl border border-white/10">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-slate-50">
+                  <Percent className="h-5 w-5" />
+                  Padrões de Negócio
+                </CardTitle>
+                <CardDescription className="text-slate-400">
+                  Configurações padrão aplicadas a novas produções
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="max-w-xs">
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Taxa de Imposto Padrão (%)
+                  </label>
+                  <div className="relative">
+                    <Input
+                      type="number"
+                      step="1"
+                      min="0"
+                      max="100"
+                      value={formData.default_tax_rate}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, ""); // Remove any non-numeric characters
+                        const parsedValue = parseInt(value) || 0;
+                        setFormData({ ...formData, default_tax_rate: parsedValue });
+                      }}
+                      placeholder="0"
+                      className="bg-slate-900/50 border-slate-700 pr-8"
+                    />
+                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-sm">%</span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Esta taxa será aplicada automaticamente a novas produções
+                  </p>
                 </div>
-                <p className="text-xs text-slate-500 mt-1">
-                  Esta taxa será aplicada automaticamente a novas produções
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
             {/* Botão Salvar */}
             <div className="flex justify-end">
@@ -390,13 +391,12 @@ export default function SettingsPage() {
                       </CardTitle>
                       <CardDescription className="flex items-center gap-2 mt-2">
                         Status:
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          settings.subscription_status === 'active'
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${settings.subscription_status === 'active'
                             ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200'
                             : settings.subscription_status === 'trialing'
-                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                            : 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
-                        }`}>
+                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                              : 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
+                          }`}>
                           {getStatusLabel(settings.subscription_status)}
                         </span>
                       </CardDescription>
@@ -428,17 +428,16 @@ export default function SettingsPage() {
                       <p className="font-medium text-slate-50">Status Atual</p>
                       <p className="text-sm text-slate-400">
                         {settings.subscription_status === 'active' ? 'Assinatura ativa e funcionando' :
-                         settings.subscription_status === 'trialing' ? 'Período de teste gratuito' :
-                         'Assinatura inativa'}
+                          settings.subscription_status === 'trialing' ? 'Período de teste gratuito' :
+                            'Assinatura inativa'}
                       </p>
                     </div>
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                      settings.subscription_status === 'active'
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${settings.subscription_status === 'active'
                         ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200'
                         : settings.subscription_status === 'trialing'
-                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                        : 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
-                    }`}>
+                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                          : 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
+                      }`}>
                       {getStatusLabel(settings.subscription_status)}
                     </span>
                   </div>

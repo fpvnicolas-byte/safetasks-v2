@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Plus, Search, Package, Wrench, Coins } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,15 +12,15 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '../../../components/ui/alert-dialog';
-import { servicesApi } from './src/lib/api';
-import { Button } from '../../../components/ui/button';
-import { Input } from '../../../components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
-import { Textarea } from '../../../components/ui/textarea';
+} from '@/components/ui/alert-dialog';
+import { servicesApi } from '@/lib/api';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { useSWRConfig } from 'swr';
 import { toast } from 'sonner';
-import { CardList } from '../../../components/ui/card-list';
+import { CardList } from '@/components/ui/card-list';
 import { usePrivacy } from '../layout';
 
 // Interface com tipagem rigorosa
@@ -154,8 +154,8 @@ export default function ServicesPage() {
             <h1 className="text-4xl font-extrabold text-slate-50 tracking-tight">Catálogo de Serviços</h1>
             <p className="text-slate-400 mt-2 text-lg">Defina preços base para suas propostas comerciais</p>
           </div>
-          <Button onClick={() => setCreateModalOpen(true)} 
-          className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all outline-none bg-slate-800 hover:bg-slate-700 border border-slate-600 text-primary-foreground h-9 px-4 py-2"
+          <Button onClick={() => setCreateModalOpen(true)}
+            className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all outline-none bg-slate-800 hover:bg-slate-700 border border-slate-600 text-primary-foreground h-9 px-4 py-2"
           >
             <Plus className="h-4 w-4" />
             Novo Serviço
@@ -165,9 +165,9 @@ export default function ServicesPage() {
         {/* Search Bar */}
         <div className="relative group max-w-md mb-12">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
-          <Input 
-            placeholder="Procurar serviço..." 
-            value={searchTerm} 
+          <Input
+            placeholder="Procurar serviço..."
+            value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-12 h-12 bg-white/5 border-white/10 rounded-2xl text-slate-50 placeholder:text-slate-600 focus:ring-2 focus:ring-blue-500/50 transition-all shadow-inner"
           />
@@ -180,8 +180,8 @@ export default function ServicesPage() {
         />
       </div>
 
-{/* Create Service Modal */}
-<Dialog open={createModalOpen} onOpenChange={setCreateModalOpen}>
+      {/* Create Service Modal */}
+      <Dialog open={createModalOpen} onOpenChange={setCreateModalOpen}>
         <DialogContent className="bg-slate-950/95 backdrop-blur-2xl border border-white/10 max-w-md">
           <DialogHeader>
             <DialogTitle className="text-slate-50 text-xl font-semibold">
@@ -292,7 +292,7 @@ export default function ServicesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle className="text-xl font-bold">Excluir Serviço?</AlertDialogTitle>
             <AlertDialogDescription className="text-slate-400 text-base">
-              Você está prestes a remover <span className="text-white font-semibold">"{serviceToDelete?.name}"</span> do catálogo. 
+              Você está prestes a remover <span className="text-white font-semibold">"{serviceToDelete?.name}"</span> do catálogo.
               Esta ação é irreversível.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -300,8 +300,8 @@ export default function ServicesPage() {
             <AlertDialogCancel className="bg-white/5 border-white/10 text-slate-300 hover:bg-white/10 hover:text-white rounded-xl">
               Manter
             </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={confirmDeleteService} 
+            <AlertDialogAction
+              onClick={confirmDeleteService}
               className="bg-red-600 hover:bg-red-500 text-white font-semibold rounded-xl"
             >
               Excluir Permanentemente

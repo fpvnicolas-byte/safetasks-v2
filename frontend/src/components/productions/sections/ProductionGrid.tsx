@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button';
 import { Calendar, CreditCard, DollarSign, TrendingUp, Trash2, Edit, Download, FileText, ChevronDown } from 'lucide-react';
-import { formatCurrency } from './src/lib/utils';
+import { formatCurrency } from '@/lib/utils';
 
 // Interface simplificada para o grid
 interface Production {
@@ -134,7 +134,7 @@ export function ProductionGrid({
                 >
                   <Button
                     variant="ghost"
-                    size="sm"
+                    size="icon"
                     onClick={(e) => {
                       e.stopPropagation();
                       const isOpen = openDropdown === production.id.toString();
@@ -178,7 +178,7 @@ export function ProductionGrid({
               {onDelete && (
                 <Button
                   variant="ghost"
-                  size="sm"
+                  size="icon"
                   onClick={(e) => {
                     e.stopPropagation();
                     onDelete(production);
@@ -195,12 +195,12 @@ export function ProductionGrid({
           <div className="space-y-3">
             <div className="flex items-center text-sm text-slate-400">
               <Calendar className="h-4 w-4 mr-2" />
-              {production.deadline ? new Date(production.deadline).toLocaleDateString('pt-BR') : '--'}
+              {production.deadline ? new Date(production.deadline).toLocaleDateString("pt-BR") : "--"}
             </div>
 
             <div className="flex items-center text-sm text-slate-400 font-semibold uppercase">
               <CreditCard className="h-4 w-4 mr-2" />
-              {production.payment_method ? paymentMethodLabels[production.payment_method] || production.payment_method : '--'}
+              {production.payment_method ? paymentMethodLabels[production.payment_method] || production.payment_method : "--"}
             </div>
 
             <div className="flex items-center text-sm text-slate-400">

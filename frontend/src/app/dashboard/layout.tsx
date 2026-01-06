@@ -1,3 +1,4 @@
+
 'use client';
 
 import { createContext, useContext, useEffect, useState, useMemo } from 'react';
@@ -17,10 +18,10 @@ import {
   X
 } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
-import { authApi, organizationsApi } from './src/lib/api';
-import { useDesignTokens } from './src/lib/hooks/use-design-tokens';
-import { AccessibilityPanel } from '../../components/dev/accessibility-panel';
-import { SubscriptionGuard } from '../../components/SubscriptionGuard';
+import { authApi, organizationsApi } from '@/lib/api';
+import { useDesignTokens } from '@/lib/hooks/use-design-tokens';
+import { AccessibilityPanel } from '@/components/dev/accessibility-panel';
+import { SubscriptionGuard } from '@/components/SubscriptionGuard';
 
 interface User {
   id: number;

@@ -1,8 +1,9 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
 import { Plus, Edit, Search, X, Save, User, Mail, Shield, UserCheck, UserX } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,12 +14,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '../../../components/ui/alert-dialog';
-import { usersApi } from './src/lib/api';
-import { Button } from '../../../components/ui/button';
-import { Input } from '../../../components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
-import { Badge } from '../../../components/ui/badge';
+} from '@/components/ui/alert-dialog';
+import { usersApi } from '@/lib/api';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { useSWRConfig } from 'swr';
 import { toast } from 'sonner';
 
@@ -366,7 +367,7 @@ export default function UsersPage() {
             <p className="text-slate-400 text-lg mb-2">
               {searchTerm ? 'Nenhum usuário encontrado' : 'Nenhum usuário cadastrado'}
             </p>
-            <p className="text-slate-500 text-sm">
+            <p className="text-sm text-slate-500 mt-1">
               {searchTerm ? 'Tente ajustar os filtros de busca' : 'Comece convidando membros para sua equipe'}
             </p>
           </div>
@@ -541,7 +542,7 @@ export default function UsersPage() {
               <Button
                 onClick={() => {
                   // Edit functionality would need backend endpoint
-                  toast.error('Funcionalidade de edição será implementada com novo endpoint no backend');
+                  toast.error("Funcionalidade de edição será implementada com novo endpoint no backend");
                   setEditModalOpen(false);
                   setSelectedUser(null);
                   resetForm();

@@ -1,7 +1,8 @@
+
 'use client';
 
 import { DollarSign, Package, FileText, TrendingUp } from 'lucide-react';
-import { formatCurrency } from './src/lib/utils';
+import { formatCurrency } from '@/lib/utils';
 
 interface FinancialTabProps {
   selectedProduction: any;
@@ -106,4 +107,3 @@ export function FinancialTab({ selectedProduction, isEditing }: FinancialTabProp
     </div>
   );
 }
-
