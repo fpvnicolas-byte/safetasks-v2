@@ -8,10 +8,8 @@ const nextConfig: NextConfig = {
     webpackBuildWorker: false,
   },
 
-  // Força o Webpack estável para evitar conflitos com Turbopack
-  webpack: (config) => {
-    return config;
-  },
+  // Configuração Turbopack para resolver conflitos com webpack
+  turbopack: {},
 
   // Configuração de Imagens corrigida
   images: {
@@ -28,8 +26,6 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-
-  // Configuração ESLint removida - não suportada diretamente no NextConfig 
 
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
