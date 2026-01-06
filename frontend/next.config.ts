@@ -3,6 +3,14 @@ import path from "path";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  turbopack: {
+    rules: {
+      '*.svg': {
+        loaders: ['@svgr/webpack'],
+        as: '*.js',
+      },
+    },
+  },
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,
