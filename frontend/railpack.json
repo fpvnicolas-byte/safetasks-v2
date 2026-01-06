@@ -1,6 +1,7 @@
 {
     "build": {
-        "builder": "RAILPACK"
+        "builder": "RAILPACK",
+        "buildCommand": "rm -rf .next && npm ci && npm run build"
     },
     "deploy": {
         "startCommand": "npm start"
