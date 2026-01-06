@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { authApi } from '@/lib/api';
+import { authApi } from '../../../lib/api';
 import { AdminDashboard } from '../../components/dashboard/AdminDashboard';
 import { CrewDashboard } from '../../components/dashboard/CrewDashboard';
 
