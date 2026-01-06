@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useDesignTokens } from 'src/lib/hooks';
-import { generateAccessibilityReport } from 'src/lib/accessibility-tests';
+import { useDesignTokens } from './src/lib/hooks';
+import { generateAccessibilityReport } from './src/lib/accessibility-tests';
 
 interface AccessibilityReport {
   accessibility: {
