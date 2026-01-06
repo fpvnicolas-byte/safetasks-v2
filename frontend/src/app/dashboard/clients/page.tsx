@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Plus, Edit, Search, X, User, Phone, Mail, Building, MapPin } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,11 +13,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { clientsApi } from '@/lib/api';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+} from '../../../components/ui/alert-dialog';
+import { clientsApi } from '../../../lib/api';
+import { Button } from '../../../components/ui/button';
+import { Input } from '../../../components/ui/input';
+import { Badge } from '../../../components/ui/badge';
 import { useSWRConfig } from 'swr';
 import { toast } from 'sonner';
 

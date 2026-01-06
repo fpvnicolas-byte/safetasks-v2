@@ -1,9 +1,9 @@
 'use client';
 
 import { Save, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '../ui/button';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../ui/sheet';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { GeneralTab } from './tabs/GeneralTab';
 import { FinancialTab } from './tabs/FinancialTab';
 import { ItemsTab } from './tabs/ItemsTab';
