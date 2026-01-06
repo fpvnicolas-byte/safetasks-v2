@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../..
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../components/ui/tabs';
 import { useSWRConfig } from 'swr';
 import { toast } from 'sonner';
-import { organizationsApi } from '../../src/lib/api';
+import { organizationsApi } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 
 interface OrganizationSettings {
