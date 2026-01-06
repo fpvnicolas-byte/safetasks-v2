@@ -10,6 +10,9 @@ const nextConfig: NextConfig = {
         as: '*.js',
       },
     },
+    resolveAlias: {
+      '@': './src',
+    },
   },
   webpack: (config) => {
     config.resolve.alias = {
