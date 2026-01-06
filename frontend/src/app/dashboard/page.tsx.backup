@@ -2,10 +2,10 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { TrendingUp, Receipt, DollarSign, Target, Package, BarChart3, PieChart as PieChartIcon, Users, Activity } from 'lucide-react';
-import { dashboardApi } from '@/lib/api';
-import { formatCurrency } from '@/lib/utils';
+import { dashboardApi } from './src/lib/api';
+import { formatCurrency } from './src/lib/utils';
 import { usePrivacy } from './layout';
-import { useDesignTokens, useAccessibility } from '@/lib/hooks';
+import { useDesignTokens, useAccessibility } from './src/lib/hooks';
 import { DashboardCardSkeleton } from '@/components/ui/dashboard-card-skeleton';
 import { ChartSection } from '@/components/dashboard/ChartSection';
 
