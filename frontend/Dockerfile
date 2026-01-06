@@ -1,5 +1,5 @@
-# Use Node.js 22 Alpine for smaller image size
-FROM node:22-alpine
+# Use Node.js 22 slim for reliable npm availability
+FROM node:22-slim
 
 # Set working directory
 WORKDIR /app
