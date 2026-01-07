@@ -3,13 +3,13 @@
 
 import { useEffect, useState } from 'react';
 import { Settings, Building, Percent, Save, CreditCard, Calendar, Clock, ArrowUp, X, Receipt, Badge } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '../../../components/ui/button';
+import { Input } from '../../../components/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../components/ui/tabs';
 import { useSWRConfig } from 'swr';
 import { toast } from 'sonner';
-import { organizationsApi } from '@/lib/api';
+import { organizationsApi } from '../../../lib/api';
 import { useRouter } from 'next/navigation';
 
 interface OrganizationSettings {

@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { FileText, Download, AlertCircle, CheckCircle, Receipt } from 'lucide-react';
-import { dashboardApi, productionsApi } from '@/lib/api';
+import { dashboardApi, productionsApi } from '../../../lib/api';
 
 export default function ReportsTestPage() {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -120,7 +120,7 @@ export default function ReportsTestPage() {
       };
 
       // Import dinâmico para não afetar o bundle principal
-      const { generatePDFReport } = await import('@/components/reports/ReportsGenerator');
+      const { generatePDFReport } = await import('../../../components/reports/ReportsGenerator');
 
       await generatePDFReport(reportData);
 
@@ -132,7 +132,7 @@ export default function ReportsTestPage() {
       console.error('❌ Erro ao buscar dados do dashboard:', error);
 
       // Import dinâmico para o fallback
-      const { generatePDFReport } = await import('@/components/reports/ReportsGenerator');
+      const { generatePDFReport } = await import('../../../components/reports/ReportsGenerator');
 
       // Fallback: tentar gerar relatório com dados mockados básicos
       try {
@@ -237,7 +237,7 @@ export default function ReportsTestPage() {
       };
 
       // Import dinâmico para gerar PDF do orçamento
-      const { generateBudgetPDF } = await import('@/components/reports/BudgetGenerator');
+      const { generateBudgetPDF } = await import('../../../components/reports/BudgetGenerator');
 
       await generateBudgetPDF(budgetData);
 

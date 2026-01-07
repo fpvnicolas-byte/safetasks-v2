@@ -2,7 +2,7 @@
 'use client';
 
 import { Skeleton } from './skeleton';
-import { useDesignTokens } from '@/lib/hooks/use-design-tokens';
+import { useDesignTokens } from '../../lib/hooks/use-design-tokens';
 
 export function DashboardCardSkeleton() {
   const { spacing, borderRadius, colors, shadows } = useDesignTokens();
