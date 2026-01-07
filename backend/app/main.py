@@ -1,3 +1,4 @@
+import os
 import logging
 import time
 from fastapi import Depends, FastAPI, Request, Response
@@ -37,21 +38,28 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 logger.info("SafeTasks V2 API starting up")
 
-# --- ADICIONE ISTO AQUI ---
-logger.info(f"🔒 CORS ALLOWED ORIGINS: {settings.backend_cors_origins}")
-# --------------------------
+# --- CORREÇÃO INFALÍVEL DE CORS (MANUAL OVERRIDE) ---
+# Lendo a variável bruta do sistema para evitar erros de parsing do Pydantic
+raw_cors_origins = os.getenv("BACKEND_CORS_ORIGINS", "")
 
-# --- CORREÇÃO CRÍTICA DE CORS AQUI ---
-# Agora ele usa a lista que definimos no Render (BACKEND_CORS_ORIGINS)
-if settings.backend_cors_origins:
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=[str(origin) for origin in settings.backend_cors_origins],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-# -------------------------------------
+if raw_cors_origins:
+    # Separa por vírgula e remove espaços em branco (Ex: "url1, url2" vira ["url1", "url2"])
+    origins_list = [origin.strip() for origin in raw_cors_origins.split(",") if origin.strip()]
+else:
+    # Fallback de segurança: se a variável estiver vazia, usa estes padrões
+    origins_list = ["https://safetasks-frontend.onrender.com", "http://localhost:3000"]
+
+# Log para confirmar no terminal do Render
+logger.info(f"🔒 MANUAL CORS ORIGINS LOADED: {origins_list}")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins_list,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+# ----------------------------------------------------
 
 # Performance monitoring middleware
 @app.middleware("http")
