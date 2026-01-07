@@ -64,11 +64,27 @@ async def run_async_migrations() -> None:
 
     """
 
-    connectable = async_engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
+    # Priorizar DATABASE_URL do ambiente (Render) sobre configuração local
+    import os
+    database_url = os.getenv("DATABASE_URL")
+
+    if database_url:
+        # Usar DATABASE_URL do Render, convertendo para async se necessário
+        if database_url.startswith("postgresql://"):
+            database_url = database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+
+        connectable = async_engine_from_config(
+            {"sqlalchemy.url": database_url},
+            prefix="sqlalchemy.",
+            poolclass=pool.NullPool,
+        )
+    else:
+        # Fallback para configuração local (desenvolvimento)
+        connectable = async_engine_from_config(
+            config.get_section(config.config_ini_section, {}),
+            prefix="sqlalchemy.",
+            poolclass=pool.NullPool,
+        )
 
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
