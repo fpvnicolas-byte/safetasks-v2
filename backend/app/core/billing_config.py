@@ -17,7 +17,7 @@ class SubscriptionStatus(str, Enum):
 # Configuration for Plan Limits
 PLAN_LIMITS: Dict[SubscriptionPlan, Dict[str, Any]] = {
     SubscriptionPlan.FREE: {
-        "max_collaborators": 1,
+        "max_collaborators": 2,
         "max_clients": 5,
         "max_active_productions": 1,
         "features": ["basic_calendar"]
