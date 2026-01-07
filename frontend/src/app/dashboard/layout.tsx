@@ -192,7 +192,7 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen flex relative overflow-hidden bg-slate-950 text-slate-50">
+    <div className="min-h-screen relative bg-slate-950 text-slate-50">
       {/* Dynamic Background Orbs Layer */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <div className="absolute inset-0 opacity-10">
@@ -257,7 +257,7 @@ export default function DashboardLayout({
 
       {/* Sidebar */}
       <nav
-        className="w-64 relative z-10"
+        className="fixed left-0 top-0 h-screen w-64 z-10 overflow-y-auto"
         style={{
           backgroundColor: colors.glass.dark,
           backdropFilter: 'blur(12px)',
@@ -420,7 +420,7 @@ export default function DashboardLayout({
       </nav>
 
       {/* Main content */}
-      <main id="main-content" className="flex-1 flex flex-col overflow-hidden">
+      <main id="main-content" className="ml-64 flex-1 flex flex-col min-h-screen overflow-auto">
         <SubscriptionGuard>
           {/* Trial Status Banner */}
           {showTrialBanner && trialDaysRemaining !== null && trialDaysRemaining > 0 && (
