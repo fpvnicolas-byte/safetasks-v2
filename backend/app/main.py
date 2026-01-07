@@ -55,7 +55,7 @@ logger.info(f"🔒 MANUAL CORS ORIGINS LOADED: {origins_list}")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins_list,
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
