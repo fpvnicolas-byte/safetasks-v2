@@ -100,7 +100,12 @@ export default function UsersPage() {
       // Toast de erro para 400 Bad Request (mantém modal aberto)
       if (err.response?.status === 400) {
         toast.error("Dados inválidos ou e-mail já cadastrado");
-      } else {
+      }
+      // Tratamento específico para limite de colaboradores (403)
+      else if (err.response?.status === 403) {
+        toast.error("Limite de colaboradores atingido. Faça upgrade do plano para adicionar mais usuários.");
+      }
+      else {
         toast.error("Erro ao criar usuário");
       }
     }
