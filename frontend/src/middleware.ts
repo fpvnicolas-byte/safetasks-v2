@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   // Get the pathname of the request (e.g. /dashboard, /login)
   const path = request.nextUrl.pathname;
   const searchParams = request.nextUrl.searchParams;
 
   // Define public paths that don't require authentication
-  const publicPaths = ['/login'];
+  const publicPaths = ['/', '/login', '/register', '/plans', '/privacy', '/faq'];
   const isPublicPath = publicPaths.includes(path);
 
   // SPECIAL CASE: Allow access to dashboard with subscription=success
@@ -22,17 +22,36 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // For protected paths, check if there's a token
-  // Note: We can't access localStorage in middleware, so we check for the token in cookies
-  // The login page will store the token in both localStorage and a cookie
-  const token = request.cookies.get('token')?.value;
+  // Define protected paths that require authentication
+  const protectedPaths = [
+    '/dashboard',
+    '/clients',
+    '/productions',
+    '/services',
+    '/users',
+    '/settings',
+    '/calendar',
+    '/reports'
+  ];
 
-  if (!token) {
-    // Redirect to login if no token
-    return NextResponse.redirect(new URL('/login', request.url));
+  // Check if the current path is protected
+  const isProtectedPath = protectedPaths.some(protectedPath =>
+    path === protectedPath || path.startsWith(protectedPath + '/')
+  );
+
+  // Only check authentication for protected paths
+  if (isProtectedPath) {
+    // Note: We can't access localStorage in middleware, so we check for the token in cookies
+    // The login page will store the token in both localStorage and a cookie
+    const token = request.cookies.get('token')?.value;
+
+    if (!token) {
+      // Redirect to login if no token for protected paths
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
   }
 
-  // Allow the request if token exists
+  // Allow the request (either public path or protected path with valid token)
   return NextResponse.next();
 }
 
