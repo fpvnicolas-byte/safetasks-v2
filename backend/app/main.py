@@ -37,6 +37,10 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 logger.info("SafeTasks V2 API starting up")
 
+# --- ADICIONE ISTO AQUI ---
+logger.info(f"🔒 CORS ALLOWED ORIGINS: {settings.backend_cors_origins}")
+# --------------------------
+
 # --- CORREÇÃO CRÍTICA DE CORS AQUI ---
 # Agora ele usa a lista que definimos no Render (BACKEND_CORS_ORIGINS)
 if settings.backend_cors_origins:
