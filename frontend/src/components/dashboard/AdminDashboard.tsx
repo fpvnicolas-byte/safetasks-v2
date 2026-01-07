@@ -156,6 +156,36 @@ export function AdminDashboard() {
 
     const statusChartData = data?.productions_by_status || [];
 
+    // Detectar se há dados reais vs dados fake
+    const hasRealRevenueData = data?.monthly_revenue && data.monthly_revenue.length > 0;
+    const hasRealStatusData = data?.productions_by_status && data.productions_by_status.length > 0;
+    const hasRealClientsData = data?.top_clients && data.top_clients.length > 0;
+
+    // Dados fake realistas para quando não há dados reais
+    const fakeRevenueData = [
+        { month: 'Jan', revenue: 12000 },
+        { month: 'Fev', revenue: 15000 },
+        { month: 'Mar', revenue: 18000 },
+        { month: 'Abr', revenue: 22000 },
+        { month: 'Mai', revenue: 25000 },
+        { month: 'Jun', revenue: 28000 }
+    ];
+
+    const fakeStatusData = [
+        { name: 'Concluída', value: 45, percentage: 45, fill: '#10b981' },
+        { name: 'Em Andamento', value: 30, percentage: 30, fill: '#f59e0b' },
+        { name: 'Aprovada', value: 15, percentage: 15, fill: '#3b82f6' },
+        { name: 'Rascunho', value: 10, percentage: 10, fill: '#6b7280' }
+    ];
+
+    const fakeTopClientsData = [
+        { name: 'Empresa ABC Ltda', total_value: 45000, productions_count: 12 },
+        { name: 'Tech Solutions S.A.', total_value: 38000, productions_count: 9 },
+        { name: 'Marketing Digital Pro', total_value: 32000, productions_count: 7 },
+        { name: 'Consultoria XYZ', total_value: 28000, productions_count: 6 },
+        { name: 'Inovação Corp', total_value: 22000, productions_count: 5 }
+    ];
+
     if (loading) {
         return (
             <div className="space-y-8">
@@ -505,16 +535,21 @@ export function AdminDashboard() {
 
                 <ChartSection
                     data={data || {}}
-                    revenueChartData={revenueChartData}
-                    statusChartData={statusChartData.map(item => ({
-                        name: statusTranslations[item.status as keyof typeof statusTranslations] || item.status, // Traduzir para português
-                        value: Math.round(item.percentage), // Arredondar para número elegante
-                        percentage: item.percentage,
-                        // Adicionar cor diretamente nos dados para garantir aplicação
-                        fill: getStatusColorForChart(item.status)
-                    }))}
-                    topClientsData={data?.top_clients || []}
+                    revenueChartData={hasRealRevenueData ? revenueChartData : fakeRevenueData}
+                    statusChartData={hasRealStatusData ?
+                        statusChartData.map(item => ({
+                            name: statusTranslations[item.status as keyof typeof statusTranslations] || item.status, // Traduzir para português
+                            value: Math.round(item.percentage), // Arredondar para número elegante
+                            percentage: item.percentage,
+                            // Adicionar cor diretamente nos dados para garantir aplicação
+                            fill: getStatusColorForChart(item.status)
+                        })) : fakeStatusData
+                    }
+                    topClientsData={hasRealClientsData ? data?.top_clients || [] : fakeTopClientsData}
                     privacyMode={privacyMode}
+                    hasRealRevenueData={hasRealRevenueData}
+                    hasRealStatusData={hasRealStatusData}
+                    hasRealClientsData={hasRealClientsData}
                 />
             </div>
         </div>

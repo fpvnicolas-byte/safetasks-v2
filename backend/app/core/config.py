@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # 1. Banco de Dados (Lê DATABASE_URL do Render)
-    database_url: str = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost:5432/safetasks_dev")
+    database_url: str = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost:5432/safetasks_local")
 
     # 2. Redis (Opcional, deixamos vazio por enquanto)
     redis_url: str = os.getenv("REDIS_URL", "")

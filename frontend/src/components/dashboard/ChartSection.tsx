@@ -54,6 +54,9 @@ interface ChartSectionProps {
   statusChartData: Array<{ name: string; value: number; percentage: number; fill?: string }>;
   topClientsData: Array<{ name: string; total_value: number; productions_count: number }>;
   privacyMode: boolean;
+  hasRealRevenueData?: boolean;
+  hasRealStatusData?: boolean;
+  hasRealClientsData?: boolean;
 }
 
 function ChartSkeleton() {
@@ -69,7 +72,10 @@ export function ChartSection({
   revenueChartData,
   statusChartData,
   topClientsData,
-  privacyMode
+  privacyMode,
+  hasRealRevenueData = true,
+  hasRealStatusData = true,
+  hasRealClientsData = true
 }: ChartSectionProps) {
   return (
     <Suspense fallback={<ChartSkeleton />}>
@@ -77,90 +83,131 @@ export function ChartSection({
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           {/* Revenue Trend */}
-          <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 shadow-2xl">
+          <div className={`bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 shadow-2xl ${!hasRealRevenueData ? 'relative overflow-hidden' : ''
+            }`}>
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-slate-50">
                 Evolução da Receita
               </h3>
               <div className="h-5 w-5 bg-blue-400 rounded"></div>
             </div>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={revenueChartData}>
-                  <XAxis
-                    dataKey="month"
-                    stroke="rgb(148, 163, 184)"
-                    fontSize={12}
-                    tick={{ fill: 'rgb(148, 163, 184)' }}
-                  />
-                  <YAxis
-                    stroke="rgb(148, 163, 184)"
-                    fontSize={12}
-                    tick={{ fill: 'rgb(148, 163, 184)' }}
-                    tickFormatter={(value) => {
-                      // Formatar valores grandes adequadamente (dados já vêm em reais)
-                      if (value >= 1000000) return `R$ ${(value / 1000000).toFixed(1)}M`;
-                      if (value >= 1000) return `R$ ${(value / 1000).toFixed(0)}k`;
-                      return `R$ ${value.toFixed(0)}`;
-                    }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'rgb(30, 41, 59)',
-                      border: '1px solid rgba(148, 163, 184, 0.2)',
-                      borderRadius: '8px',
-                      color: 'rgb(248, 250, 252)',
-                    }}
-                    formatter={(value: any) => {
-                      const numValue = typeof value === 'number' ? value : parseFloat(value);
-                      return isNaN(numValue) ? ['R$ 0,00', 'Receita'] : [formatCurrency(numValue), 'Receita'];
-                    }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="revenue"
-                    stroke="rgb(59, 130, 246)"
-                    fill="rgba(59, 130, 246, 0.2)"
-                    strokeWidth={2}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+
+            {/* Aplica blur no gráfico quando dados fake */}
+            <div className={`${!hasRealRevenueData ? 'blur-[0.3px] opacity-90' : ''}`}>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={revenueChartData}>
+                    <XAxis
+                      dataKey="month"
+                      stroke="rgb(148, 163, 184)"
+                      fontSize={12}
+                      tick={{ fill: 'rgb(148, 163, 184)' }}
+                    />
+                    <YAxis
+                      stroke="rgb(148, 163, 184)"
+                      fontSize={12}
+                      tick={{ fill: 'rgb(148, 163, 184)' }}
+                      tickFormatter={(value) => {
+                        // Formatar valores grandes adequadamente (dados já vêm em reais)
+                        if (value >= 1000000) return `R$ ${(value / 1000000).toFixed(1)}M`;
+                        if (value >= 1000) return `R$ ${(value / 1000).toFixed(0)}k`;
+                        return `R$ ${value.toFixed(0)}`;
+                      }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'rgb(30, 41, 59)',
+                        border: '1px solid rgba(148, 163, 184, 0.2)',
+                        borderRadius: '8px',
+                        color: 'rgb(248, 250, 252)',
+                      }}
+                      formatter={(value: any) => {
+                        const numValue = typeof value === 'number' ? value : parseFloat(value);
+                        return isNaN(numValue) ? ['R$ 0,00', 'Receita'] : [formatCurrency(numValue), 'Receita'];
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="revenue"
+                      stroke="rgb(59, 130, 246)"
+                      fill="rgba(59, 130, 246, 0.2)"
+                      strokeWidth={2}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
             </div>
+
+            {/* Overlay para dados fake */}
+            {!hasRealRevenueData && (
+              <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-[0.8px] z-10 flex items-center justify-center rounded-2xl">
+                <div className="text-center bg-slate-950/60 px-6 py-4 rounded-xl border border-white/10 shadow-lg">
+                  <div className="text-white text-xl font-semibold mb-3">📊 Dados de Exemplo</div>
+                  <div className="text-slate-200 text-base max-w-sm leading-relaxed">Comece a adicionar produções para ver a evolução real da sua receita</div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Status Chart */}
-          <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 shadow-2xl">
+          <div className={`bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 shadow-2xl ${!hasRealStatusData ? 'relative overflow-hidden' : ''
+            }`}>
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-slate-50">
                 Produções por Status
               </h3>
               <div className="h-5 w-5 bg-purple-400 rounded"></div>
             </div>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={statusChartData}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, value }) => `${name}: ${value}%`}
-                  >
-                    {statusChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill || getStatusColor(entry.name)} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+
+            {/* Aplica blur no gráfico quando dados fake */}
+            <div className={`${!hasRealStatusData ? 'blur-[0.3px] opacity-90' : ''}`}>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={statusChartData}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                      label={({ name, value }) => `${name}: ${value}%`}
+                    >
+                      {statusChartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill || getStatusColor(entry.name)} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
             </div>
+
+            {/* Overlay para dados fake */}
+            {!hasRealStatusData && (
+              <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-[0.8px] z-10 flex items-center justify-center rounded-2xl">
+                <div className="text-center bg-slate-950/60 px-6 py-4 rounded-xl border border-white/10 shadow-lg">
+                  <div className="text-white text-xl font-semibold mb-3">📊 Dados de Exemplo</div>
+                  <div className="text-slate-200 text-base max-w-sm leading-relaxed">Adicione produções para ver a distribuição real por status</div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Top Clients */}
-        <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 shadow-2xl mb-8">
+        <div className={`bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 shadow-2xl mb-8 ${!hasRealClientsData ? 'relative overflow-hidden' : ''
+          }`}>
+          {/* Overlay para dados fake */}
+          {!hasRealClientsData && (
+            <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-[0.8px] z-10 flex items-center justify-center rounded-2xl">
+              <div className="text-center bg-slate-950/60 px-6 py-4 rounded-xl border border-white/10 shadow-lg">
+                <div className="text-white text-xl font-semibold mb-3">📊 Dados de Exemplo</div>
+                <div className="text-slate-200 text-base max-w-sm leading-relaxed">Adicione clientes e produções para ver seu ranking real</div>
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-slate-50">
               Top Clientes
@@ -175,15 +222,18 @@ export function ChartSection({
                     {index + 1}
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-slate-200">
+                    <p className={`text-sm font-medium text-slate-200 ${!hasRealClientsData ? 'blur-[0.8px]' : ''
+                      }`}>
                       {client.name}
                     </p>
-                    <p className="text-xs text-slate-400">
+                    <p className={`text-xs text-slate-400 ${!hasRealClientsData ? 'blur-[0.8px]' : ''
+                      }`}>
                       {client.productions_count} produções
                     </p>
                   </div>
                 </div>
-                <div className={`text-sm font-medium ${privacyMode ? 'blur-sm select-none' : ''}`}>
+                <div className={`text-sm font-medium ${privacyMode || !hasRealClientsData ? 'blur-sm select-none' : ''
+                  }`}>
                   {formatCurrency(client.total_value)}
                 </div>
               </div>
