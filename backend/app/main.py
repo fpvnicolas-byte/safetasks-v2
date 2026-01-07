@@ -5,6 +5,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+# Importando as configurações para ler as variáveis de ambiente
+from app.core.config import settings 
+
 from app.api.v1.endpoints.auth import router as auth_router
 from app.api.v1.endpoints.clients import router as clients_router
 from app.api.v1.endpoints.dashboard import router as dashboard_router
@@ -34,14 +37,17 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 logger.info("SafeTasks V2 API starting up")
 
-# Configure CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# --- CORREÇÃO CRÍTICA DE CORS AQUI ---
+# Agora ele usa a lista que definimos no Render (BACKEND_CORS_ORIGINS)
+if settings.backend_cors_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[str(origin) for origin in settings.backend_cors_origins],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+# -------------------------------------
 
 # Performance monitoring middleware
 @app.middleware("http")
@@ -116,7 +122,7 @@ app.include_router(webhooks_router, prefix="/api/v1/webhooks", tags=["webhooks"]
 
 @app.get("/")
 async def root():
-    return {"status": "ok"}
+    return {"status": "ok", "message": "SafeTasks V2 API is running"}
 
 
 @app.get("/health")
@@ -170,7 +176,8 @@ async def health_check(db: AsyncSession = Depends(get_db)):
 
     # System info
     health_status["version"] = "2.0.0"
-    health_status["environment"] = "development"  # Could be from config
+    # Agora pega o ambiente real da configuração, não hardcoded "development"
+    health_status["environment"] = settings.log_level 
 
     logger.info("Health check performed", extra={"status": health_status["status"]})
     return health_status
