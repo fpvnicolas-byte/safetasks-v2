@@ -1,11 +1,18 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
   output: 'standalone',
   experimental: {
     webpackBuildWorker: false,
   },
-  // Remova o bloco 'turbopack' anterior completamente
+  // O Turbopack no Render precisa saber onde a src está 
+  // relativa ao diretório de execução (frontend/)
+  turbopack: {
+    resolveAlias: {
+      "@": "./src",
+    },
+  },
   images: {
     unoptimized: true,
     remotePatterns: [{ protocol: 'https', hostname: '**' }],
