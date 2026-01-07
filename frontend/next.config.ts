@@ -6,11 +6,11 @@ const nextConfig: NextConfig = {
   experimental: {
     webpackBuildWorker: false,
   },
-  // O Turbopack no Render precisa saber onde a src está 
+  // O Turbopack no Render precisa saber onde a src está
   // relativa ao diretório de execução (frontend/)
   turbopack: {
     resolveAlias: {
-      "@": "./src",
+      "@": path.resolve(__dirname, "src"),
     },
   },
   images: {

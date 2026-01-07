@@ -1,7 +1,6 @@
-
 'use client';
 
-import { createContext, useContext, useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation'; // Importante: useRouter adicionado
 import {
@@ -22,6 +21,8 @@ import { authApi, organizationsApi } from '@/lib/api';
 import { useDesignTokens } from '@/lib/hooks/use-design-tokens';
 import { AccessibilityPanel } from '@/components/dev/accessibility-panel';
 import { SubscriptionGuard } from '@/components/SubscriptionGuard';
+import { Footer } from '@/components/Footer';
+import { usePrivacy, PrivacyContext } from '@/hooks/use-privacy';
 
 interface User {
   id: number;
@@ -55,21 +56,7 @@ const navigation = [
   { name: 'Configurações', href: '/dashboard/settings', icon: Settings },
 ];
 
-// Privacy Context
-interface PrivacyContextType {
-  privacyMode: boolean;
-  setPrivacyMode: (mode: boolean) => void;
-}
 
-const PrivacyContext = createContext<PrivacyContextType | undefined>(undefined);
-
-export const usePrivacy = () => {
-  const context = useContext(PrivacyContext);
-  if (!context) {
-    throw new Error('usePrivacy must be used within a PrivacyProvider');
-  }
-  return context;
-};
 
 export default function DashboardLayout({
   children,
@@ -416,7 +403,6 @@ export default function DashboardLayout({
                   borderRadius: borderRadius.md,
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.color = colors.slate[200];
                   e.currentTarget.style.backgroundColor = colors.glass.light;
                 }}
                 onMouseLeave={(e) => {

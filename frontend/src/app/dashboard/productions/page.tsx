@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSWRConfig } from 'swr';
 import { toast } from 'sonner';
-import { usePrivacy } from '../layout';
+import { usePrivacy } from '@/hooks/use-privacy';
 
 // Componentes refatorados
 import { ProductionHeader } from '@/components/productions/sections/ProductionHeader';

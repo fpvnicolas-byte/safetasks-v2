@@ -21,7 +21,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useSWRConfig } from 'swr';
 import { toast } from 'sonner';
 import { CardList } from '@/components/ui/card-list';
-import { usePrivacy } from '../layout';
+import { usePrivacy } from '@/hooks/use-privacy';
 
 // Interface com tipagem rigorosa
 interface Service {

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -7,7 +6,7 @@ import { productionsApi } from '@/lib/api';
 import { useSWRConfig } from 'swr';
 import useSWR from 'swr';
 import ProductionQuickView from '@/components/calendar/ProductionQuickView';
-import { usePrivacy } from '../layout';
+import { usePrivacy } from '@/hooks/use-privacy';
 
 // Full interface matching ProductionQuickView
 interface Production {
@@ -379,6 +378,6 @@ export default function CalendarPage() {
         onClose={() => setQuickViewOpen(false)}
         onEditComplete={handleEditComplete}
       />
-    </div>
+    </div >
   );
 }
