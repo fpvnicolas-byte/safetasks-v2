@@ -2,9 +2,13 @@ import os
 from typing import List, Union
 from pydantic import field_validator
 from pydantic_settings import BaseSettings
+from dotenv import load_dotenv
+
+# Carregar variáveis de ambiente do .env
+load_dotenv()
 
 class Settings(BaseSettings):
-    # 1. Banco de Dados (Lê DATABASE_URL do Render)
+    # 1. Banco de Dados (Lê DATABASE_URL do Render ou Supabase)
     database_url: str = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost:5432/safetasks_local")
 
     # 2. Redis (Opcional, deixamos vazio por enquanto)
@@ -14,6 +18,12 @@ class Settings(BaseSettings):
     secret_key: str = os.getenv("SECRET_KEY", "CHANGE_ME_IN_PRODUCTION")
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
+
+    # 4. Supabase Configuration
+    supabase_url: str = os.getenv("SUPABASE_URL", "")
+    supabase_anon_key: str = os.getenv("SUPABASE_ANON_KEY", "")
+    supabase_service_role_key: str = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+    supabase_jwt_secret: str = os.getenv("SUPABASE_JWT_SECRET", "")
 
     # 4. Logs
     log_level: str = os.getenv("LOG_LEVEL", "INFO")
@@ -50,7 +60,7 @@ class Settings(BaseSettings):
         return self.database_url
 
     class Config:
-        env_file = ".env"
+        env_file = ".env"  # ✅ CARREGAR .env AUTOMATICAMENTE
         case_sensitive = True # No Linux/Render as variáveis geralmente são Case Sensitive
         extra = "ignore" # Permite variáveis de ambiente extras sem quebrar a validação
 

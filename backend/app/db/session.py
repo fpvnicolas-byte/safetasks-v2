@@ -4,7 +4,15 @@ from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 
 # Create async engine
-engine = create_async_engine(settings.async_database_url, echo=True)
+engine = create_async_engine(
+    settings.async_database_url,
+    echo=False,
+    pool_pre_ping=True,
+    connect_args={
+        "statement_cache_size": 0,  # CRUCIAL PARA SUPABASE - desabilita prepared statements
+        "ssl": "require"            # GARANTIR SSL
+    }
+)
 
 # Create async session factory
 AsyncSessionLocal = sessionmaker(

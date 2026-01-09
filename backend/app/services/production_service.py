@@ -39,11 +39,31 @@ async def calculate_production_totals(production_id: int, db: AsyncSession) -> N
 
     logger.info(f"Starting calculation for production {production_id}")
 
-    # Get all items for this production
+    # 🔥 OPTIMIZED: Single query with eager loading to prevent N+1 queries
+    # Load production with all required relationships in one efficient query
     result = await db.execute(
-        select(ProductionItem).where(ProductionItem.production_id == production_id)
+        select(Production)
+        .where(Production.id == production_id)
+        .options(
+            selectinload(Production.organization),
+            selectinload(Production.items),
+            selectinload(Production.expenses),
+            selectinload(Production.crew)
+        )
     )
-    items = result.scalars().all()
+    production = result.scalar_one_or_none()
+
+    if production is None:
+        raise ValueError(f"Production with ID {production_id} not found")
+
+    organization = production.organization
+    if organization is None:
+        raise ValueError(f"Production with ID {production_id} has no associated organization")
+
+    # Use eagerly loaded data from memory instead of separate queries
+    items = production.items or []
+    expenses = production.expenses or []
+    crew = production.crew or []
 
     # Calculate subtotal (sum of all item total_prices)
     # Validate that all items have non-negative prices
@@ -52,7 +72,7 @@ async def calculate_production_totals(production_id: int, db: AsyncSession) -> N
             raise FinancialCalculationError(
                 f"Production item {item.id} has negative total_price: {item.total_price}"
             )
-    
+
     subtotal = sum(item.total_price for item in items)
     logger.info(f"Production {production_id}: Found {len(items)} items, subtotal = R$ {(subtotal/100):.2f}")
 
@@ -62,12 +82,6 @@ async def calculate_production_totals(production_id: int, db: AsyncSession) -> N
             f"Calculated subtotal is negative: {subtotal} for production {production_id}"
         )
 
-    # Get all expenses for this production
-    result = await db.execute(
-        select(Expense).where(Expense.production_id == production_id)
-    )
-    expenses = result.scalars().all()
-    
     # Validate expenses have non-negative values
     for expense in expenses:
         if expense.value < 0:
@@ -75,12 +89,6 @@ async def calculate_production_totals(production_id: int, db: AsyncSession) -> N
                 f"Expense {expense.id} has negative value: {expense.value}"
             )
 
-    # Get all crew fees for this production
-    result = await db.execute(
-        select(ProductionCrew).where(ProductionCrew.production_id == production_id)
-    )
-    crew = result.scalars().all()
-    
     # Validate crew fees are non-negative
     for member in crew:
         if member.fee is not None and member.fee < 0:
@@ -101,26 +109,16 @@ async def calculate_production_totals(production_id: int, db: AsyncSession) -> N
             f"Calculated total_cost is negative: {total_cost} for production {production_id}"
         )
 
-    # Get the production with organization and relationships loaded for calculation
-    result = await db.execute(
-        select(Production, Organization).join(Organization).where(Production.id == production_id).options(
-            selectinload(Production.items),
-            selectinload(Production.expenses)
-        )
-    )
-    row = result.first()
-    if row is None:
-        raise ValueError(f"Production with ID {production_id} not found or has no associated organization")
-
-    production, organization = row
-
     # Only use organization's default_tax_rate if production tax_rate is None (not set)
     # Allow explicit 0.0 values set by user
     if production.tax_rate is None:
         production.tax_rate = organization.default_tax_rate or 0.0
 
     # Use the tax_rate that is now set on the production
+    # Ensure it's a numeric value (handle potential None from eager loading)
     effective_tax_rate = production.tax_rate
+    if effective_tax_rate is None:
+        effective_tax_rate = 0.0
     
     # Validate tax_rate is within valid range (0-100)
     if effective_tax_rate < 0 or effective_tax_rate > 100:
@@ -204,3 +202,4 @@ async def calculate_production_totals(production_id: int, db: AsyncSession) -> N
     # Flush to ensure changes are in the current transaction
     # The calling function should handle commit
     await db.flush()
+    db.add(production)

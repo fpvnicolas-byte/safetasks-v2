@@ -10,7 +10,7 @@ from app.api.deps import get_current_active_admin, get_current_user
 from app.db.session import get_db
 from app.models.user import Organization, User
 from app.core.config import settings
-from app.core.billing_config import SubscriptionPlan, PLAN_LIMITS
+from app.core.billing_config import SubscriptionPlan
 
 router = APIRouter()
 
@@ -265,9 +265,3 @@ async def create_portal_session(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating portal session: {e}")
 
-
-# Price IDs for different plans (these would be stored in a database in production)
-PLAN_PRICE_IDS = {
-    SubscriptionPlan.STARTER: "price_1SmKRMQBou9YDSD2HPqUgldI",
-    SubscriptionPlan.PRO: "price_1SmKRzQBou9YDSD2ORsiMUgI",
-}

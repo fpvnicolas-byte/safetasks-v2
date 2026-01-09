@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, MapPin, Users, Package, User, FileText, X } from 'lucide-react';
+import { Plus, Users } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../../../components/ui/alert-dialog';
 import { productionsApi, servicesApi, usersApi, clientsApi } from '../../../lib/api';
@@ -22,89 +22,39 @@ import { ProductionEditSheet } from '../../../components/productions/sections/Pr
 import { ProductionGrid } from '../../../components/productions/sections/ProductionGrid';
 import { ProductionCardSkeleton } from '../../../components/ui/production-card-skeleton';
 
-// Interfaces baseadas nos schemas do backend
-interface ProductionCrewMember {
-  id: number;
-  user_id: number;
-  full_name: string | null;
-  role: string;
-  fee: number | null;
-}
+// Interfaces from ProductionEditSheet (as a temporary workaround)
+import { ProductionResponse, ProductionStatus, ClientResponse, ProductionItemResponse, ProductionCrewResponse, ExpenseResponse } from '../../../components/productions/sections/ProductionEditSheet';
 
-interface ProductionItem {
-  id: number;
-  name: string;
-  quantity: number;
-  unit_price: number;
-  total_price: number;
-}
-
-interface ProductionExpense {
-  id: number;
-  name: string;
-  value: number;
-  category: string | null;
-  paid_by: string | null;
-}
-
-interface Client {
-  id: number;
-  full_name: string;
-  email?: string;
-  cnpj?: string;
-  phone?: string;
-}
-
-interface Production {
-  id: number;
+// Simple Production interface for ProductionGrid component
+interface ProductionForGrid {
+  id: number | string;
   title: string;
-  status: string;
+  status: string; // Changed from ProductionStatus to string to match ProductionGrid.tsx
   deadline: string | null;
-  shooting_sessions: Array<{
-    date: string;
-    location: string;
-  }> | null;
-  priority: string | null;
   payment_method: string | null;
-  payment_status: string;
-  due_date: string | null;
-  subtotal: number;
-  discount: number;
-  tax_rate: number;
-  tax_amount: number;
   total_value: number;
-  total_cost: number;
   profit: number;
-  notes: string | null;
-  client?: Client;
-  crew: ProductionCrewMember[];
-  items: ProductionItem[];
-  expenses: ProductionExpense[];
 }
 
 interface ProductionsResponse {
-  productionsList: Production[];
+  productionsList: ProductionResponse[];
   total: number;
   skip: number;
   limit: number;
   has_more: boolean;
 }
 
-type ProductionStatus = 'draft' | 'proposal_sent' | 'approved' | 'in_progress' | 'completed' | 'canceled';
-
-
 export default function ProductionsPage() {
   const { privacyMode } = usePrivacy();
-  const [productions, setProductions] = useState<Production[]>([]);
+  const [productions, setProductions] = useState<ProductionResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>('');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [selectedProduction, setSelectedProduction] = useState<Production | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
+  const [selectedProduction, setSelectedProduction] = useState<ProductionResponse | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [productionToDelete, setProductionToDelete] = useState<Production | null>(null);
+  const [productionToDelete, setProductionToDelete] = useState<ProductionResponse | null>(null);
 
   // Pagination state
   const [hasMore, setHasMore] = useState(false);
@@ -114,20 +64,6 @@ export default function ProductionsPage() {
   const { mutate } = useSWRConfig();
   const router = useRouter();
 
-  // Estados para as abas dinâmicas
-  const [services, setServices] = useState<any[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
-  const [selectedService, setSelectedService] = useState<any>(null);
-  const [selectedUser, setSelectedUser] = useState<any>(null);
-  const [newItemQuantity, setNewItemQuantity] = useState(1);
-  const [newCrewRole, setNewCrewRole] = useState('');
-  const [newCrewFee, setNewCrewFee] = useState(1);
-
-  // Estados para despesas
-  const [newExpenseName, setNewExpenseName] = useState('');
-  const [newExpenseValue, setNewExpenseValue] = useState(0);
-  const [newExpenseCategory, setNewExpenseCategory] = useState('');
-
   // Estados para criação de produção
   const [createForm, setCreateForm] = useState({
     title: '',
@@ -135,261 +71,11 @@ export default function ProductionsPage() {
     status: '' as ProductionStatus | '',
     deadline: '',
   });
-  const [clients, setClients] = useState<any[]>([]);
-
-  // Estado para edição
-  const [editForm, setEditForm] = useState<{
-    title: string;
-    status: ProductionStatus;
-    deadline: string;
-    shooting_sessions: Array<{ date: string | null, location: string | null }>;
-    payment_method: string;
-    payment_status: string;
-    due_date: string;
-    subtotal: number;
-    total_cost: number;
-    discount: number;
-    tax_rate: number;
-    notes: string;
-  }>({
-    title: '',
-    status: 'draft' as ProductionStatus,
-    deadline: '',
-    shooting_sessions: [] as Array<{ date: string | null, location: string | null }>,
-    payment_method: '',
-    payment_status: 'pending',
-    due_date: '',
-    subtotal: 0,
-    total_cost: 0,
-    discount: 0,
-    tax_rate: 0,
-    notes: '',
-  });
+  const [clients, setClients] = useState<ClientResponse[]>([]); // Client type from backend schema
 
   useEffect(() => {
     fetchProductions(0);
   }, []);
-
-  // Buscar serviços e usuários quando necessário
-  const fetchServices = async () => {
-    try {
-      const response = await servicesApi.getServices();
-      setServices(response);
-    } catch (err) {
-      console.error("Erro ao buscar serviços:", err);
-    }
-  };
-
-  const fetchUsers = async () => {
-    try {
-      const response = await usersApi.getUsers();
-      setUsers(response);
-    } catch (err) {
-      console.error("Erro ao buscar usuários:", err);
-    }
-  };
-
-  // Funções para adicionar/remover itens
-  const handleAddItem = async () => {
-    if (!selectedService || !selectedProduction) return;
-
-    try {
-      // Payload correto baseado no schema ProductionItemCreate
-      const itemData = {
-        service_id: selectedService.id,
-        quantity: newItemQuantity,
-        // unit_price é opcional - se não fornecido, usa o default_price do serviço
-      };
-
-
-
-      await productionsApi.addProductionItem(selectedProduction.id, itemData);
-
-      // Atualizar produção e dados financeiros
-      await mutate('/api/v1/productions');
-
-      // Buscar produção atualizada para atualizar o estado local
-      const response: ProductionsResponse = await productionsApi.getProductions();
-      const updatedProduction = response.productionsList.find((p: Production) => p.id === selectedProduction.id);
-      if (updatedProduction) {
-        setSelectedProduction(updatedProduction);
-      }
-
-      // Reset form
-      setSelectedService(null);
-      setNewItemQuantity(1);
-    } catch (err: any) {
-      console.error("Erro ao adicionar item:", err);
-      console.error("Detalhes do erro:", err.response?.data);
-
-      // Toast de erro para 500 Internal Server Error
-      if (err.response?.status === 500) {
-        toast.error("Erro de sincronização, atualizando...");
-      } else {
-        setError(err.response?.data?.detail || 'Erro ao adicionar item');
-      }
-    }
-  };
-
-  const handleRemoveItem = async (itemId: number) => {
-    if (!selectedProduction) return;
-
-    try {
-      await productionsApi.deleteProductionItem(selectedProduction.id, itemId);
-
-      // Atualizar produção e dados financeiros
-      await mutate('/api/v1/productions');
-
-      // Buscar produção atualizada para atualizar o estado local
-      const response: ProductionsResponse = await productionsApi.getProductions();
-      const updatedProduction = response.productionsList.find((p: Production) => p.id === selectedProduction.id);
-      if (updatedProduction) {
-        setSelectedProduction(updatedProduction);
-      }
-    } catch (err: any) {
-      console.error("Erro ao remover item:", err);
-      setError(err.response?.data?.detail || 'Erro ao remover item');
-    }
-  };
-
-  // Funções para adicionar/remover crew
-  const handleAddCrewMember = async () => {
-    if (!selectedUser || !selectedProduction) return;
-
-    // Validações adicionais no frontend
-    const feeValue = Number(newCrewFee);
-    if (feeValue <= 0 || isNaN(feeValue)) {
-      toast.error("O cachê deve ser maior que zero");
-      return;
-    }
-
-    const roleValue = newCrewRole.trim();
-    if (!roleValue) {
-      toast.error("A função do membro deve ser informada");
-      return;
-    }
-
-    try {
-      // Garantir tipos corretos conforme schema ProductionCrewCreate
-      const crewData = {
-        user_id: Number(selectedUser.id),  // Garantir Integer
-        role: roleValue.trim(),
-        fee: Math.round(feeValue * 100),  // Garantir Integer em centavos
-      };
-
-
-
-      await productionsApi.addCrewMember(selectedProduction.id, crewData);
-
-      // Limpar erro em caso de sucesso e executar mutate para atualizar a interface
-      setError(null);
-      await mutate('/api/v1/productions');
-
-      // Buscar produção atualizada para atualizar o estado local
-      const response: ProductionsResponse = await productionsApi.getProductions();
-      const updatedProduction = response.productionsList.find((p: Production) => p.id === selectedProduction.id);
-      if (updatedProduction) {
-        setSelectedProduction(updatedProduction);
-      }
-
-      // Reset form
-      setSelectedUser(null);
-      setNewCrewRole('');
-      setNewCrewFee(1);
-    } catch (err: any) {
-      console.error("Erro ao adicionar membro da equipe:", err);
-
-      // Toast de erro para 500 Internal Server Error (mantém modal aberto)
-      if (err.response?.status === 500) {
-        toast.error("Erro de sincronização, atualizando...");
-        // Não fecha modal para permitir nova tentativa
-        // Sistema continua funcional
-      } else {
-        toast.error("Erro ao adicionar membro da equipe");
-      }
-    }
-  };
-
-  const handleRemoveCrewMember = async (userId: number) => {
-    if (!selectedProduction) return;
-
-    try {
-      await productionsApi.removeCrewMember(selectedProduction.id, userId);
-
-      // Atualizar produção e dados financeiros
-      await mutate('/api/v1/productions');
-
-      // Buscar produção atualizada para atualizar o estado local
-      const response: ProductionsResponse = await productionsApi.getProductions();
-      const updatedProduction = response.productionsList.find((p: Production) => p.id === selectedProduction.id);
-      if (updatedProduction) {
-        setSelectedProduction(updatedProduction);
-      }
-    } catch (err: any) {
-      console.error("Erro ao remover membro da equipe:", err);
-      setError(err.response?.data?.detail || 'Erro ao remover membro da equipe');
-    }
-  };
-
-  // Funções para adicionar/remover despesas
-  const handleAddExpense = async () => {
-    if (!selectedProduction || !newExpenseName.trim() || newExpenseValue <= 0) return;
-
-    try {
-      const expenseData = {
-        name: newExpenseName.trim(),
-        value: Math.round(newExpenseValue * 100), // Converter para centavos
-        category: newExpenseCategory || null,
-      };
-
-      await productionsApi.addExpense(selectedProduction.id, expenseData);
-
-      // Atualizar produção e dados financeiros
-      await mutate('/api/v1/productions');
-
-      // Buscar produção atualizada para atualizar o estado local
-      const response: ProductionsResponse = await productionsApi.getProductions();
-      const updatedProduction = response.productionsList.find((p: Production) => p.id === selectedProduction.id);
-      if (updatedProduction) {
-        setSelectedProduction(updatedProduction);
-      }
-
-      // Reset form
-      setNewExpenseName('');
-      setNewExpenseValue(0);
-      setNewExpenseCategory('');
-    } catch (err: any) {
-      console.error("Erro ao adicionar despesa:", err);
-
-      // Toast de erro para 500 Internal Server Error
-      if (err.response?.status === 500) {
-        toast.error("Erro de sincronização, atualizando...");
-      } else {
-        setError(err.response?.data?.detail || 'Erro ao adicionar despesa');
-      }
-    }
-  };
-
-  const handleRemoveExpense = async (expenseId: number) => {
-    if (!selectedProduction) return;
-
-    try {
-      await productionsApi.removeExpense(selectedProduction.id, expenseId);
-
-      // Atualizar produção e dados financeiros
-      await mutate('/api/v1/productions');
-
-      // Buscar produção atualizada para atualizar o estado local
-      const response: ProductionsResponse = await productionsApi.getProductions();
-      const updatedProduction = response.productionsList.find((p: Production) => p.id === selectedProduction.id);
-      if (updatedProduction) {
-        setSelectedProduction(updatedProduction);
-      }
-    } catch (err: any) {
-      console.error("Erro ao remover despesa:", err);
-      setError(err.response?.data?.detail || 'Erro ao remover despesa');
-    }
-  };
 
   const fetchProductions = async (skip = 0) => {
     try {
@@ -412,44 +98,15 @@ export default function ProductionsPage() {
     }
   };
 
+  const refreshList = () => {
+    fetchProductions(0);
+  };
+
   const handleLoadMore = () => {
     fetchProductions(currentSkip + LIMIT);
   };
 
-  // Funções auxiliares para shooting sessions dinâmicas
-  const addShootingSession = () => {
-    setEditForm(prev => ({
-      ...prev,
-      shooting_sessions: [...prev.shooting_sessions, { date: null, location: null }]
-    }));
-  };
-
-  const removeShootingSession = (index: number) => {
-    setEditForm(prev => ({
-      ...prev,
-      shooting_sessions: prev.shooting_sessions.filter((_, i) => i !== index)
-    }));
-  };
-
-  const updateShootingSessionDate = (index: number, value: string) => {
-    setEditForm(prev => ({
-      ...prev,
-      shooting_sessions: prev.shooting_sessions.map((session, i) =>
-        i === index ? { ...session, date: value } : session
-      )
-    }));
-  };
-
-  const updateShootingSessionLocation = (index: number, value: string) => {
-    setEditForm(prev => ({
-      ...prev,
-      shooting_sessions: prev.shooting_sessions.map((session, i) =>
-        i === index ? { ...session, location: value } : session
-      )
-    }));
-  };
-
-  const handleDeleteProduction = (production: Production) => {
+  const handleDeleteProduction = (production: ProductionResponse) => {
     setProductionToDelete(production);
   };
 
@@ -468,85 +125,9 @@ export default function ProductionsPage() {
     }
   };
 
-
-  const handleEdit = (production: Production) => {
+  const handleEdit = (production: ProductionResponse) => {
     setSelectedProduction(production);
-    setEditForm({
-      title: production.title,
-      status: production.status as ProductionStatus,
-      deadline: production.deadline ? new Date(production.deadline).toISOString().split('T')[0] : '',
-      shooting_sessions: production.shooting_sessions ? production.shooting_sessions.map(session => ({
-        date: session.date ?? null,
-        location: session.location ?? null
-      })) : [],
-      payment_method: production.payment_method || '',
-      payment_status: production.payment_status || 'pending',
-      due_date: production.due_date ? new Date(production.due_date).toISOString().split('T')[0] : '',
-      subtotal: production.subtotal / 100, // Converter para reais para edição
-      total_cost: production.total_cost / 100, // Converter para reais para edição
-      discount: production.discount ? production.discount / 100 : 0, // Converter centavos para reais
-      tax_rate: production.tax_rate,
-      notes: production.notes || '',
-    });
-
-    setIsEditing(true);
     setSheetOpen(true);
-  };
-
-  const handleSave = async () => {
-    if (!selectedProduction) return;
-
-    try {
-      // Filtrar shooting sessions válidas (com data ou location)
-      const validShootingSessions = editForm.shooting_sessions
-        .filter(session => (session.date && session.date.trim() !== "") || (session.location && session.location.trim() !== ""))
-        .map(session => ({
-          date: session.date && session.date.trim() ? session.date.trim() : null,
-          location: session.location && session.location.trim() ? session.location.trim() : null
-        }));
-
-      const payload = {
-        title: editForm.title,
-        status: editForm.status,
-        deadline: editForm.deadline ? new Date(editForm.deadline).toISOString() : null,
-        shooting_sessions: validShootingSessions.length > 0 ? validShootingSessions : null,
-        payment_method: editForm.payment_method,
-        payment_status: editForm.payment_status,
-        due_date: editForm.due_date ? new Date(editForm.due_date).toISOString() : null,
-        subtotal: Math.round(editForm.subtotal * 100), // Converter para centavos
-        total_cost: Math.round(editForm.total_cost * 100), // Converter para centavos
-        discount: Math.round(editForm.discount * 100), // Converter para centavos
-        tax_rate: editForm.tax_rate,
-        notes: editForm.notes || null,
-      };
-
-      const response = await productionsApi.updateProduction(selectedProduction.id, payload);
-
-      // Atualizar lista e resumo financeiro
-      await mutate('/api/v1/productions');
-
-      setIsEditing(false);
-      setSheetOpen(false);
-      setSelectedProduction(null);
-      await fetchProductions(); // Recarregar lista
-    } catch (err: any) {
-      console.error("Erro no PATCH:", err);
-      console.error("Dados do erro:", err.response?.data);
-      console.error("Status do erro:", err.response?.status);
-
-      // Verificar se é erro 422 (Unprocessable Entity)
-      if (err.response?.status === 422) {
-        console.error("Erro 422 - Campos inválidos:", err.response.data.detail);
-      }
-
-      setError(err.response?.data?.detail || 'Erro ao salvar produção');
-    }
-  };
-
-  const handleCancel = () => {
-    setIsEditing(false);
-    setSheetOpen(false);
-    setSelectedProduction(null);
   };
 
   // Função para criar nova produção
@@ -567,8 +148,6 @@ export default function ProductionsPage() {
         payload.status = createForm.status;
       }
 
-
-
       await productionsApi.createProduction(payload);
 
       // Atualizar lista e limpar modal
@@ -580,7 +159,7 @@ export default function ProductionsPage() {
         deadline: '',
       });
       await mutate('/api/v1/productions');
-      await fetchProductions();
+      await refreshList(); // Use refreshList here
     } catch (err: any) {
       console.error("Erro ao criar produção:", err);
       setError(err.response?.data?.detail || 'Erro ao criar produção');
@@ -604,7 +183,7 @@ export default function ProductionsPage() {
   });
 
   // Função para gerar orçamento PDF
-  const handleGenerateBudget = async (production: Production) => {
+  const handleGenerateBudget = async (production: ProductionResponse) => {
     try {
       toast.loading('Gerando orçamento...', { id: 'budget-generation' });
 
@@ -625,7 +204,7 @@ export default function ProductionsPage() {
           deadline: productionData.deadline
         },
         items: productionData.items || [],
-        services: productionData.services || [],
+        services: [], // Services are now fetched by ProductionEditSheet, not directly part of ProductionResponse
         total: productionData.total_value || 0,
         discount: productionData.discount || 0,
         tax: productionData.tax_amount || 0
@@ -725,30 +304,30 @@ export default function ProductionsPage() {
             id: p.id,
             title: p.title,
             status: p.status,
-            deadline: p.deadline,
-            payment_method: p.payment_method,
+            deadline: p.deadline || null,
+            payment_method: p.payment_method || null,
             total_value: p.total_value,
             profit: p.profit
           }))}
           searchTerm={searchTerm}
           statusFilter={statusFilter}
           privacyMode={privacyMode}
-          onEdit={(production: any) => {
-            // Encontrar a produção completa na lista
+          onEdit={(production: ProductionForGrid) => {
+            // Encontrar a produção completa na lista para passar para o sheet
             const fullProduction = productions.find(p => p.id === production.id);
             if (fullProduction) {
               handleEdit(fullProduction);
             }
           }}
-          onDelete={(production: any) => {
-            // Encontrar a produção completa na lista
+          onDelete={(production: ProductionForGrid) => {
+            // Encontrar a produção completa na lista para exclusão
             const fullProduction = productions.find(p => p.id === production.id);
             if (fullProduction) {
               handleDeleteProduction(fullProduction);
             }
           }}
-          onDownloadBudget={(production: any) => {
-            // Encontrar a produção completa na lista
+          onDownloadBudget={(production: ProductionForGrid) => {
+            // Encontrar a produção completa na lista para download do orçamento
             const fullProduction = productions.find(p => p.id === production.id);
             if (fullProduction) {
               handleGenerateBudget(fullProduction);
@@ -782,53 +361,14 @@ export default function ProductionsPage() {
       </div>
 
       {/* Production Edit Sheet */}
-      <ProductionEditSheet
-        open={sheetOpen}
-        onOpenChange={setSheetOpen}
-        selectedProduction={selectedProduction}
-        isEditing={isEditing}
-        onSave={handleSave}
-        onCancel={handleCancel}
-        editForm={editForm}
-        onEditFormChange={(updates) => setEditForm(prev => ({ ...prev, ...updates }))}
-
-        // ItemsTab
-        services={services}
-        selectedService={selectedService}
-        newItemQuantity={newItemQuantity}
-        onServicesChange={setServices}
-        onSelectedServiceChange={setSelectedService}
-        onNewItemQuantityChange={setNewItemQuantity}
-        onFetchServices={fetchServices}
-
-        // CrewTab
-        users={users}
-        selectedUser={selectedUser}
-        newCrewRole={newCrewRole}
-        newCrewFee={newCrewFee}
-        onUsersChange={setUsers}
-        onSelectedUserChange={setSelectedUser}
-        onNewCrewRoleChange={setNewCrewRole}
-        onNewCrewFeeChange={setNewCrewFee}
-        onFetchUsers={fetchUsers}
-
-        // ExpensesTab
-        newExpenseName={newExpenseName}
-        newExpenseValue={newExpenseValue}
-        newExpenseCategory={newExpenseCategory}
-        onNewExpenseNameChange={setNewExpenseName}
-        onNewExpenseValueChange={setNewExpenseValue}
-        onNewExpenseCategoryChange={setNewExpenseCategory}
-
-        // Shooting Sessions
-        onAddShootingSession={addShootingSession}
-        onRemoveShootingSession={removeShootingSession}
-        onUpdateShootingSessionDate={updateShootingSessionDate}
-        onUpdateShootingSessionLocation={updateShootingSessionLocation}
-
-        // Update selectedProduction
-        onUpdateSelectedProduction={(production: any) => setSelectedProduction(production)}
-      />
+      {selectedProduction && (
+        <ProductionEditSheet
+          open={sheetOpen}
+          onOpenChange={setSheetOpen}
+          production={selectedProduction}
+          onUpdate={refreshList}
+        />
+      )}
       {/* Create Production Modal */}
       <Dialog open={createModalOpen} onOpenChange={setCreateModalOpen}>
         <DialogContent className="bg-slate-950/95 backdrop-blur-2xl border border-white/10 max-w-md">

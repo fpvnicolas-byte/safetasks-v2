@@ -1,35 +1,32 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ProductionCrewCreate(BaseModel):
-    user_id: int
+    user_id: str
     role: str
-    fee: int = Field(..., gt=0, description="Fee must be greater than 0")  # In cents
+    fee: int = Field(..., description="Fee in cents")  # In cents
 
 
 class ProductionCrewResponse(BaseModel):
     id: int
     production_id: int
-    user_id: int
+    user_id: str
     role: str
     fee: int  # In cents
     full_name: str | None = None  # Add full_name field
 
-    class Config:
-        from_attributes = True
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ProductionCrewMember(BaseModel):
     """Schema for showing crew member info to team members (shows only their own fee)"""
     id: int
-    user_id: int
+    user_id: str
     full_name: str | None = None  # Allow None if user relationship not loaded
     role: str
     fee: int | None = None  # Only show fee if it's the current user's assignment
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ProductionCrewMemberRestricted(BaseModel):
@@ -38,5 +35,4 @@ class ProductionCrewMemberRestricted(BaseModel):
     role: str
     fee: int | None = None  # Only their own fee
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

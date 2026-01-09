@@ -1,130 +1,55 @@
 
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Users, User, Plus, X } from 'lucide-react';
 import { Button } from '../../../../components/ui/button';
 import { Input } from '../../../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
-import { productionsApi } from '../../../../lib/api';
 import { formatCurrency } from '../../../../lib/utils';
-import { useSWRConfig } from 'swr';
-import { toast } from 'sonner';
+import { ProductionCrewResponse } from '../ProductionEditSheet'; // Import types from parent
 
 interface CrewTabProps {
-  selectedProduction: any;
-  users: any[];
-  selectedUser: any;
-  newCrewRole: string;
-  newCrewFee: number;
-  onUsersChange: (users: any[]) => void;
-  onSelectedUserChange: (user: any) => void;
-  onNewCrewRoleChange: (role: string) => void;
-  onNewCrewFeeChange: (fee: number) => void;
-  onFetchUsers: () => Promise<void>;
-  onUpdateSelectedProduction: (production: any) => void;
+  crew: ProductionCrewResponse[]; // Receives the local state from parent (including negative IDs)
+  users: any[]; // Options for the select (should be a specific UserResponse type if available)
+  newCrewRole: string; // Local state of parent for new crew member role
+  newCrewFee: number; // Local state of parent for new crew member fee
+  onNewCrewRoleChange: (role: string) => void; // Parent setter
+  onNewCrewFeeChange: (fee: number) => void; // Parent setter
+  onFetchUsers: () => Promise<void>; // Parent fetcher
+  onAddCrewMember: (selectedUserId: string, role: string, fee: number) => void; // Parent handler
+  onRemoveCrewMember: (crewId: number) => void; // Parent handler
 }
 
 export function CrewTab({
-  selectedProduction,
+  crew,
   users,
-  selectedUser,
   newCrewRole,
   newCrewFee,
-  onUsersChange,
-  onSelectedUserChange,
   onNewCrewRoleChange,
   onNewCrewFeeChange,
   onFetchUsers,
-  onUpdateSelectedProduction
+  onAddCrewMember,
+  onRemoveCrewMember
 }: CrewTabProps) {
-  const { mutate } = useSWRConfig();
-
-  const handleAddCrewMember = async () => {
-    if (!selectedUser || !selectedProduction) return;
-
-    // Validações adicionais no frontend
-    const feeValue = Number(newCrewFee);
-    if (feeValue <= 0 || isNaN(feeValue)) {
-      toast.error("O cachê deve ser maior que zero");
-      return;
-    }
-
-    const roleValue = newCrewRole.trim();
-    if (!roleValue) {
-      toast.error("A função do membro deve ser informada");
-      return;
-    }
-
-    try {
-      const crewData = {
-        user_id: Number(selectedUser.id),
-        role: roleValue.trim(),
-        fee: Math.round(feeValue * 100), // Em centavos
-      };
-
-      await productionsApi.addCrewMember(selectedProduction.id, crewData);
-
-      await mutate('/api/v1/productions');
-
-      // Buscar produção atualizada para atualizar o estado local
-      const response = await productionsApi.getProductions();
-      const updatedProduction = response.productionsList.find((p: any) => p.id === selectedProduction.id);
-      if (updatedProduction) {
-        onUpdateSelectedProduction(updatedProduction);
-      }
-
-      // Reset form
-      onSelectedUserChange(null);
-      onNewCrewRoleChange('');
-      onNewCrewFeeChange(1);
-      toast.success('Membro adicionado com sucesso!');
-    } catch (err: any) {
-      console.error("Erro ao adicionar membro da equipe:", err);
-      if (err.response?.status === 500) {
-        toast.error("Erro de sincronização, atualizando...");
-      } else {
-        toast.error(err.response?.data?.detail || 'Erro ao adicionar membro');
-      }
-    }
-  };
-
-  const handleRemoveCrewMember = async (userId: number) => {
-    if (!selectedProduction) return;
-
-    try {
-      await productionsApi.removeCrewMember(selectedProduction.id, userId);
-
-      await mutate('/api/v1/productions');
-
-      // Buscar produção atualizada para atualizar o estado local
-      const response = await productionsApi.getProductions();
-      const updatedProduction = response.productionsList.find((p: any) => p.id === selectedProduction.id);
-      if (updatedProduction) {
-        onUpdateSelectedProduction(updatedProduction);
-      }
-
-      toast.success('Membro removido com sucesso!');
-    } catch (err: any) {
-      console.error("Erro ao remover membro da equipe:", err);
-      toast.error('Erro ao remover membro');
-    }
-  };
+  // Estado local para controlar o Select (não usar estado global)
+  const [selectedMemberId, setSelectedMemberId] = useState<string>('');
 
   return (
     <div className="space-y-6">
       {/* Formulário para adicionar membros da equipe */}
       <div className="bg-slate-900/50 rounded-xl p-4 border border-white/10">
-        <h4 className="text-sm font-medium text-slate-50 mb-4">Adicionar Membro da Equipe</h4>
+        <div className="flex items-center gap-2 mb-4">
+          <Users className="h-4 w-4 text-slate-400" />
+          <h4 className="text-sm font-medium text-slate-50">Adicionar Membro da Equipe</h4>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <Select
-              value={selectedUser?.id ? selectedUser.id.toString() : ''}
-              onValueChange={(value) => {
-                const user = users.find(u => u.id === parseInt(value));
-                onSelectedUserChange(user || null);
-              }}
+              value={selectedMemberId}
+              onValueChange={setSelectedMemberId}
               onOpenChange={(open) => {
-                if (open && users.length === 0) {
+                if (open && (!users || users.length === 0)) {
                   onFetchUsers();
                 }
               }}
@@ -133,15 +58,15 @@ export function CrewTab({
                 <SelectValue placeholder="Selecionar usuário" />
               </SelectTrigger>
               <SelectContent className="bg-slate-900 border-slate-700">
-                {users.length > 0 ? (
-                  users.map((user) => (
+                {users && users.length > 0 ? (
+                  users.map((user: any) => (
                     <SelectItem key={user.id} value={user.id.toString()}>
                       {user.full_name} ({user.email})
                     </SelectItem>
                   ))
                 ) : (
                   <div className="p-2 text-sm text-slate-400">
-                    Nenhum usuário cadastrado.
+                    Nenhum usuário encontrado.
                   </div>
                 )}
               </SelectContent>
@@ -169,8 +94,8 @@ export function CrewTab({
                   onNewCrewFeeChange(isNaN(parsedValue) ? 0 : parsedValue);
                 }}
                 onBlur={(e) => {
-                  if (newCrewFee < 1) {
-                    onNewCrewFeeChange(1);
+                  if (newCrewFee < 0.01) { // Changed from 1 to 0.01 since we're working with reais now
+                    onNewCrewFeeChange(0);
                   }
                 }}
                 placeholder="Cachê"
@@ -178,25 +103,48 @@ export function CrewTab({
               />
             </div>
           </div>
-        </div>
-        <div className="mt-4">
-          <Button
-            onClick={handleAddCrewMember}
-            disabled={!selectedUser || !newCrewRole.trim()}
-            className="w-full bg-emerald-600 hover:bg-emerald-700"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Adicionar Membro
-          </Button>
+          <div className="md:col-span-3">
+            <Button
+              onClick={() => {
+                console.group('🔵 CrewTab Button Clicked');
+                console.log('📦 selectedMemberId (raw):', selectedMemberId, 'type:', typeof selectedMemberId);
+
+                if (selectedMemberId) {
+                  console.log('📦 newCrewRole:', newCrewRole);
+                  console.log('📦 newCrewFee:', newCrewFee);
+                  console.log('✅ Calling onAddCrewMember with UUID string...');
+
+                  onAddCrewMember(selectedMemberId, newCrewRole, newCrewFee);  // Pass UUID string directly
+
+                  console.log('✅ onAddCrewMember called, clearing form...');
+                  setSelectedMemberId('');
+                  onNewCrewRoleChange('');
+                  onNewCrewFeeChange(0);
+                  console.log('✅ Form cleared');
+                } else {
+                  console.error('❌ selectedMemberId is empty/falsy:', selectedMemberId);
+                }
+                console.groupEnd();
+              }}
+              disabled={!selectedMemberId || !newCrewRole.trim()}
+              className="w-full bg-emerald-600 hover:bg-emerald-700"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Adicionar Membro
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Lista de membros da equipe */}
       <div className="space-y-4">
-        {selectedProduction.crew && selectedProduction.crew.length > 0 ? (
+        {crew && crew.length > 0 ? (
           <>
-            {selectedProduction.crew.map((member: any) => (
-              <div key={member.user_id} className="bg-white/5 rounded-xl p-4 border border-white/10">
+            {crew.map((member: ProductionCrewResponse, index: number) => (
+              <div
+                key={member.id > 0 ? `crew-${member.id}` : `temp-crew-${index}-${member.user_id}`}
+                className="bg-white/5 rounded-xl p-4 border border-white/10"
+              >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <User className="h-4 w-4 text-slate-400 mr-3" />
@@ -214,7 +162,7 @@ export function CrewTab({
                       </p>
                     )}
                     <Button
-                      onClick={() => handleRemoveCrewMember(member.user_id)}
+                      onClick={() => onRemoveCrewMember(member.id)}
                       variant="ghost"
                       size="sm"
                       className="text-red-400 hover:text-red-300"
@@ -235,10 +183,10 @@ export function CrewTab({
                 </div>
                 <div className="text-right">
                   <p className="text-lg font-mono font-bold text-slate-50">
-                    {formatCurrency(selectedProduction.crew.reduce((total: number, member: any) => total + (member.fee || 0), 0))}
+                    {formatCurrency(crew.reduce((total: number, member: ProductionCrewResponse) => total + (member.fee || 0), 0))}
                   </p>
                   <p className="text-xs text-slate-400">
-                    {selectedProduction.crew.length} membro{selectedProduction.crew.length !== 1 ? 's' : ''}
+                    {crew.length} membro{crew.length !== 1 ? 's' : ''}
                   </p>
                 </div>
               </div>

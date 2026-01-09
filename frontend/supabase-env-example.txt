@@ -1,0 +1,12 @@
+# Frontend Environment Variables for Supabase
+# ⚠️  IMPORTANTE: Copie o conteúdo abaixo para um arquivo chamado .env.local
+# ⚠️  O arquivo deve estar na raiz do projeto frontend
+
+# Backend API URL
+NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+
+# Supabase Configuration (Public keys - safe to expose in frontend)
+NEXT_PUBLIC_SUPABASE_URL=https://etudhptqfgughhlfawif.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_94--ZhFfVI5-NnDyCy4Pow_k2HEmoLY
+
+# Other environment variables...

@@ -3,28 +3,26 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user
+from app.api.deps import get_current_supabase_user
 from app.db.session import get_db
 from app.core.cache import cache, CacheKeys
 from app.models.production import Production
 from app.models.production_crew import ProductionCrew
-from app.models.user import User
+from app.models.user import Profile
 from app.models.client import Client
-
 
 router = APIRouter()
 
-
 @router.get("/summary")
 async def get_dashboard_summary(
-    current_user: User = Depends(get_current_user),
+    current_profile: Profile = Depends(get_current_supabase_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Get dashboard summary based on user role with Redis caching."""
 
-    if current_user.role == "admin":
+    if current_profile.role == "admin":
         # Try cache first
-        cache_key = CacheKeys.dashboard_summary(current_user.organization_id)
+        cache_key = CacheKeys.dashboard_summary(current_profile.organization_id)
         cached_result = await cache.get(cache_key)
         if cached_result:
             return cached_result
@@ -36,7 +34,7 @@ async def get_dashboard_summary(
                 func.sum(Production.tax_amount).label('total_taxes'),
                 func.sum(Production.profit).label('total_profit'),
                 func.count(Production.id).label('total_productions')
-            ).where(Production.organization_id == current_user.organization_id)
+            ).where(Production.organization_id == current_profile.organization_id)
         )
 
         row = result.first()
@@ -60,7 +58,7 @@ async def get_dashboard_summary(
                 func.to_char(Production.created_at, 'YYYY').label('year'),
                 func.sum(Production.total_value / 100).label('revenue')  # Convert cents to reais
             )
-            .where(Production.organization_id == current_user.organization_id)
+            .where(Production.organization_id == current_profile.organization_id)
             .where(Production.created_at >= twelve_months_ago)
             .group_by(
                 func.to_char(Production.created_at, 'YYYY'),  # Group by year first
@@ -87,7 +85,7 @@ async def get_dashboard_summary(
                 func.count(Production.id).label('count'),
                 func.sum(Production.total_value).label('total_value')
             )
-            .where(Production.organization_id == current_user.organization_id)
+            .where(Production.organization_id == current_profile.organization_id)
             .group_by(Production.status)
         )
 
@@ -113,7 +111,7 @@ async def get_dashboard_summary(
                 func.sum(Production.total_value).label('total_value'),
                 func.count(Production.id).label('count')
             )
-            .where(Production.organization_id == current_user.organization_id)
+            .where(Production.organization_id == current_profile.organization_id)
             .group_by(Production.payment_status)
         )
 
@@ -142,7 +140,7 @@ async def get_dashboard_summary(
             )
             .select_from(Production)
             .join(Client, Production.client_id == Client.id)
-            .where(Production.organization_id == current_user.organization_id)
+            .where(Production.organization_id == current_profile.organization_id)
             .group_by(Client.full_name)
             .order_by(func.sum(Production.total_value).desc())
             .limit(5)
@@ -187,9 +185,9 @@ async def get_dashboard_summary(
         earnings_result = await db.execute(
             select(func.sum(ProductionCrew.fee).label('total_earnings'))
             .where(
-                ProductionCrew.user_id == current_user.id,
+                ProductionCrew.user_id == current_profile.id,
                 ProductionCrew.production_id == Production.id,
-                Production.organization_id == current_user.organization_id
+                Production.organization_id == current_profile.organization_id
             )
         )
 
@@ -197,9 +195,9 @@ async def get_dashboard_summary(
         productions_result = await db.execute(
             select(func.count(ProductionCrew.production_id.distinct()).label('production_count'))
             .where(
-                ProductionCrew.user_id == current_user.id,
+                ProductionCrew.user_id == current_profile.id,
                 ProductionCrew.production_id == Production.id,
-                Production.organization_id == current_user.organization_id
+                Production.organization_id == current_profile.organization_id
             )
         )
 

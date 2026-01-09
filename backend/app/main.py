@@ -2,11 +2,18 @@ import os
 import logging
 import time
 from fastapi import Depends, FastAPI, Request, Response
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+# Importar e carregar dotenv para garantir que as variáveis de ambiente sejam carregadas o mais cedo possível
+from dotenv import load_dotenv
+load_dotenv(os.path.join(os.path.dirname(__file__), '.env')) # Arquivo .env está na raiz do backend
+
 # Importando as configurações para ler as variáveis de ambiente
+# AGORA settings será inicializado DEPOIS que load_dotenv() for chamado
 from app.core.config import settings 
 
 from app.api.v1.endpoints.auth import router as auth_router
@@ -35,6 +42,34 @@ from slowapi.errors import RateLimitExceeded
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """
+    Custom handler for Pydantic validation errors.
+    Ensures detailed error messages are returned to the client.
+    """
+    logger.error(f"🔴 VALIDATION ERROR on {request.method} {request.url.path}")
+    logger.error(f"🔴 ERRORS: {exc.errors()}")
+    logger.error(f"🔴 BODY: {exc.body}")
+    
+    # Serialize errors properly (remove non-JSON-serializable objects like ValueError)
+    serialized_errors = []
+    for error in exc.errors():
+        serialized_error = {
+            "type": error.get("type"),
+            "loc": error.get("loc"),
+            "msg": error.get("msg"),
+            "input": error.get("input")
+        }
+        serialized_errors.append(serialized_error)
+    
+    return JSONResponse(
+        status_code=422,
+        content={
+            "detail": serialized_errors
+        },
+    )
 
 logger.info("SafeTasks V2 API starting up")
 
@@ -76,7 +111,7 @@ async def performance_monitoring(request: Request, call_next):
             user = request.state.user
             user_id = user.id
             org_id = user.organization_id
-    except:
+    except: #NOSONAR
         pass
 
     try:

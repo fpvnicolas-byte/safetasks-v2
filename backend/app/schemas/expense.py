@@ -1,9 +1,9 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ExpenseCreate(BaseModel):
     name: str
-    value: int = Field(..., gt=0, description="Expense value must be greater than 0")  # In cents
+    value: int = Field(..., description="Expense value in cents")
     category: str | None = None
     paid_by: str | None = None
 
@@ -16,5 +16,4 @@ class ExpenseResponse(BaseModel):
     category: str | None
     paid_by: str | None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

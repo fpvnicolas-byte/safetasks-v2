@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_active_admin, get_current_user
+from app.api.deps import get_current_active_admin
 from app.db.session import get_db
 from app.models.production import Production
 from app.models.production_item import ProductionItem

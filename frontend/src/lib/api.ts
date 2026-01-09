@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { supabase, authHelpers } from './supabase';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://safetasks-backend.onrender.com/api/v1';
 
@@ -11,13 +12,23 @@ export const api = axios.create({
 
 // Request interceptor to add auth token
 api.interceptors.request.use((config) => {
-  if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+  // ✅ CORREÇÃO: Usar Promise para lidar com async corretamente
+  return new Promise((resolve) => {
+    if (typeof window !== 'undefined') {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.access_token) {
+          config.headers.Authorization = `Bearer ${session.access_token}`;
+        }
+        resolve(config);
+      }).catch((error) => {
+        console.error('Erro ao obter sessão Supabase:', error);
+        resolve(config); // Sempre resolver mesmo com erro
+      });
     }
-  }
-  return config;
+    else {
+      resolve(config);
+    }
+  });
 });
 
 // Response interceptor to handle 401 and 402 errors
@@ -71,7 +82,7 @@ export const authApi = {
   },
 
   getCurrentUser: async () => {
-    const response = await api.get('/users/me');
+    const response = await api.get('/users/supabase/me');
     return response.data;
   },
 };
@@ -190,15 +201,155 @@ export const usersApi = {
     return response.data;
   },
 
-  updateUserStatus: async (userId: number, data: { is_active: boolean }) => {
+  updateUserStatus: async (userId: string, data: { is_active: boolean }) => {
     const response = await api.patch(`/users/${userId}`, data);
     return response.data;
   },
 
-  deleteUser: async (userId: number) => {
+  deleteUser: async (userId: string) => {
     const response = await api.delete(`/users/${userId}`);
     return response.data;
   },
+};
+
+// ===== SUPABASE AUTH API =====
+export const supabaseAuthApi = {
+  // Registration with Supabase (direct to Supabase, then sync with backend)
+  registerOwner: async (data: {
+    organization_name: string;
+    full_name: string;
+    email: string;
+    password: string;
+  }) => {
+    try {
+      // Register directly with Supabase Auth
+      const { data: authData, error: authError } = await authHelpers.signUp(
+        data.email,
+        data.password,
+        {
+          full_name: data.full_name,
+          organization_name: data.organization_name
+        }
+      );
+
+      if (authError) throw authError;
+
+      // ✅ NOVA CORREÇÃO: SEMPRE criar perfil no backend, mesmo com email confirmation
+      // Isso resolve o problema de perfil não existir após confirmação de email
+      if (!authData.user) {
+        throw new Error('No user returned from Supabase registration');
+      }
+
+      const backendResponse = await api.post('/auth/supabase/register-owner', {
+        ...data,
+        supabase_user_id: authData.user.id
+      });
+
+      // ✅ CORREÇÃO: Com email confirmation, NÃO há sessão imediata
+      if (!authData.session) {
+        // Email confirmation required - return info for UI
+        return {
+          success: true,
+          requiresEmailConfirmation: true,
+          user: authData.user,
+          email: data.email,
+          ...backendResponse.data
+        };
+      }
+
+      // ✅ Se chegou aqui, email confirmation está desabilitado (modo dev)
+      return {
+        ...backendResponse.data,
+        session: authData.session
+      };
+
+      throw new Error('Unexpected registration response');
+
+    }
+    catch (error) {
+      console.error('❌ Registration failed:', error);
+      throw error;
+    }
+  },
+
+  // Login with Supabase
+  login: async (email: string, password: string) => {
+    try {
+      const { data, error } = await authHelpers.signIn(email, password);
+
+      if (error) {
+        console.error('❌ Erro Supabase login:', error);
+        throw error;
+      }
+
+      // ✅ CORREÇÃO: Verificar se sessão existe (email confirmado)
+      if (!data.session) {
+        throw new Error('Email não confirmado. Verifique sua caixa de entrada e clique no link de confirmação.');
+      }
+
+      console.log('✅ Login Supabase OK:', data.user?.email);
+
+      // Return session data
+      return {
+        access_token: data.session?.access_token,
+        refresh_token: data.session?.refresh_token,
+        token_type: "bearer",
+        expires_in: data.session?.expires_in,
+        user: data.user ? {
+          id: data.user.id,
+          email: data.user.email,
+          full_name: data.user.user_metadata?.full_name,
+          role: data.user.user_metadata?.role || 'user',
+          organization_id: data.user.user_metadata?.organization_id
+        } : null
+      };
+
+    }
+    catch (error) {
+      console.error('❌ Login failed:', error);
+      throw error;
+    }
+  },
+
+  // Logout from Supabase
+  logout: async () => {
+    // Sign out from Supabase (this handles everything)
+    const { error } = await authHelpers.signOut();
+    if (error) throw error;
+  },
+
+  // Get current user profile
+  getCurrentUser: async () => {
+    const { user, error } = await authHelpers.getCurrentUser();
+    if (error) throw error;
+    return user;
+  },
+
+  // Get current user profile from backend
+  getCurrentUserProfile: async () => {
+    const response = await api.get('/users/supabase/me');
+    return response.data;
+  },
+
+  // Reset password
+  resetPassword: async (email: string) => {
+    return await authHelpers.resetPassword(email);
+  },
+
+  // Update password
+  updatePassword: async (password: string) => {
+    return await authHelpers.updatePassword(password);
+  },
+
+  // Get current session
+  getCurrentSession: async () => {
+    return await authHelpers.getCurrentSession();
+  },
+
+  // Listen to auth state changes
+  onAuthStateChange: (callback: (event: string, session: any) => void) => {
+    return authHelpers.onAuthStateChange(callback);
+  }
 };
 
 export const organizationsApi = {

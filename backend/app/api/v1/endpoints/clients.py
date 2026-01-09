@@ -4,27 +4,27 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_active_admin, check_subscription
+from app.api.deps import get_current_supabase_user, check_supabase_subscription
 from app.db.session import get_db
 from app.models.client import Client
-from app.models.user import User, Organization
-from app.schemas.client import ClientCreate, ClientResponse
+from app.models.user import Profile, Organization
+from app.schemas.client import ClientCreate
 from app.services.billing_service import BillingService
 
 router = APIRouter()
 
 
-@router.post("/", response_model=ClientResponse)
+@router.post("/", response_model=dict)
 async def create_client(
     client_data: ClientCreate,
-    current_user: User = Depends(get_current_active_admin),
-    _org: Organization = Depends(check_subscription),
+    current_profile: Profile = Depends(get_current_supabase_user),
+    _org: Organization = Depends(check_supabase_subscription),
     db: AsyncSession = Depends(get_db)
-) -> ClientResponse:
+) -> dict:
     """Create a new client for the current user's organization."""
 
     # Check subscription limits
-    await BillingService.check_client_limit(current_user.organization_id, db)
+    await BillingService.check_client_limit(current_profile.organization_id, db)
 
     # Create client linked to current user's organization
     client = Client(
@@ -33,46 +33,66 @@ async def create_client(
         cnpj=client_data.cnpj,
         address=client_data.address,
         phone=client_data.phone,
-        organization_id=current_user.organization_id
+        organization_id=current_profile.organization_id
     )
 
     db.add(client)
     await db.commit()
     await db.refresh(client)
 
-    return ClientResponse.from_orm(client)
+    return {
+        "id": client.id,
+        "full_name": client.full_name,
+        "email": client.email,
+        "cnpj": client.cnpj,
+        "address": client.address,
+        "phone": client.phone,
+        "organization_id": client.organization_id,
+        "created_at": client.created_at
+    }
 
 
-@router.get("/", response_model=List[ClientResponse])
+@router.get("/", response_model=List[dict])
 async def get_clients(
-    current_user: User = Depends(get_current_active_admin),
-    db: AsyncSession = Depends(get_db)
-) -> List[ClientResponse]:
+    current_profile: Profile = Depends(get_current_supabase_user),
+    db: AsyncSession = Depends(get_db),
+    org: Organization = Depends(check_supabase_subscription)
+) -> List[dict]:
     """Get all clients for the current user's organization."""
 
     # Get only clients from current user's organization (data isolation)
     result = await db.execute(
-        select(Client).where(Client.organization_id == current_user.organization_id)
+        select(Client).where(Client.organization_id == current_profile.organization_id)
     )
     clients = result.scalars().all()
 
-    return [ClientResponse.from_orm(client) for client in clients]
+    return [{
+        "id": client.id,
+        "full_name": client.full_name,
+        "email": client.email,
+        "cnpj": client.cnpj,
+        "address": client.address,
+        "phone": client.phone,
+        "organization_id": client.organization_id,
+        "created_at": client.created_at
+    } for client in clients]
 
 
-@router.put("/{client_id}", response_model=ClientResponse)
+@router.put("/{client_id}", response_model=dict)
 async def update_client(
     client_id: int,
     client_data: ClientCreate,
-    current_user: User = Depends(get_current_active_admin),
-    db: AsyncSession = Depends(get_db)
-) -> ClientResponse:
+    current_profile: Profile = Depends(get_current_supabase_user),
+    db: AsyncSession = Depends(get_db),
+    org: Organization = Depends(check_supabase_subscription)
+) -> dict:
     """Update a client (only if it belongs to current user's organization)."""
 
     # Get client to update
     result = await db.execute(
         select(Client).where(
             Client.id == client_id,
-            Client.organization_id == current_user.organization_id
+            Client.organization_id == current_profile.organization_id
         )
     )
     client = result.scalar_one_or_none()
@@ -90,14 +110,24 @@ async def update_client(
     await db.commit()
     await db.refresh(client)
 
-    return ClientResponse.from_orm(client)
+    return {
+        "id": client.id,
+        "full_name": client.full_name,
+        "email": client.email,
+        "cnpj": client.cnpj,
+        "address": client.address,
+        "phone": client.phone,
+        "organization_id": client.organization_id,
+        "created_at": client.created_at
+    }
 
 
 @router.delete("/{client_id}")
 async def delete_client(
     client_id: int,
-    current_user: User = Depends(get_current_active_admin),
-    db: AsyncSession = Depends(get_db)
+    current_profile: Profile = Depends(get_current_supabase_user),
+    db: AsyncSession = Depends(get_db),
+    org: Organization = Depends(check_supabase_subscription)
 ):
     """Delete a client (only if it belongs to current user's organization)."""
 
@@ -105,7 +135,7 @@ async def delete_client(
     result = await db.execute(
         select(Client).where(
             Client.id == client_id,
-            Client.organization_id == current_user.organization_id
+            Client.organization_id == current_profile.organization_id
         )
     )
     client = result.scalar_one_or_none()

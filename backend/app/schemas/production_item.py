@@ -1,12 +1,12 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ProductionItemCreate(BaseModel):
     # Either link to existing service OR provide manual details
     service_id: int | None = None
     name: str | None = None
-    quantity: float = Field(1.0, gt=0, description="Quantity must be greater than 0")
-    unit_price: int | None = Field(None, gt=0, description="Unit price must be greater than 0")  # In cents
+    quantity: float = Field(1.0, description="Quantity")
+    unit_price: int | None = Field(None, description="Unit price in cents")  # In cents
 
 
 class ProductionItemResponse(BaseModel):
@@ -17,8 +17,7 @@ class ProductionItemResponse(BaseModel):
     unit_price: int  # In cents
     total_price: int  # In cents
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ProductionItemCrewResponse(BaseModel):
@@ -29,5 +28,4 @@ class ProductionItemCrewResponse(BaseModel):
     quantity: float
     # unit_price and total_price explicitly omitted for crew privacy
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

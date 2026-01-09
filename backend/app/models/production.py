@@ -48,7 +48,7 @@ class Production(Base):
 
     # Relationships with eager loading
     organization = relationship("Organization", back_populates="productions")
-    client = relationship("Client", back_populates="productions")
+    client = relationship("Client", back_populates="productions", lazy="selectin")
     items = relationship("ProductionItem", back_populates="production", cascade="all, delete-orphan", lazy="selectin")
     expenses = relationship("Expense", back_populates="production", cascade="all, delete-orphan", lazy="selectin")
     crew = relationship("ProductionCrew", back_populates="production", cascade="all, delete-orphan", lazy="selectin")

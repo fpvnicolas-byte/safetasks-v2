@@ -6,7 +6,7 @@ from fastapi import HTTPException, status
 import stripe
 import logging
 
-from app.models.user import Organization, User
+from app.models.user import Organization, Profile
 from app.models.client import Client
 from app.core.billing_config import SubscriptionPlan, SubscriptionStatus, PLAN_LIMITS
 
@@ -42,9 +42,9 @@ class BillingService:
         plan = SubscriptionPlan(org.subscription_plan)
         limits = PLAN_LIMITS.get(plan, PLAN_LIMITS[SubscriptionPlan.FREE])
         
-        # Count current users
+        # Count current collaborators (profiles)
         count_result = await db.execute(
-            select(func.count(User.id)).where(User.organization_id == org_id)
+            select(func.count(Profile.id)).where(Profile.organization_id == org_id)
         )
         current_count = count_result.scalar_one()
 

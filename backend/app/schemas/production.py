@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, field_validator  # type: ignore
+from pydantic import BaseModel, ConfigDict, Field, field_validator  # type: ignore
 
 from app.core.utils import make_datetime_naive
 from app.models.production import ProductionStatus
@@ -34,15 +34,19 @@ class ProductionUpdate(BaseModel):
     deadline: Optional[datetime] = None
     shooting_sessions: Optional[List[dict]] = None
     priority: Optional[str] = None
-    subtotal: Optional[int] = Field(None, ge=0, description="Subtotal in cents, must be >= 0")
-    total_cost: Optional[int] = Field(None, ge=0, description="Total cost in cents, must be >= 0")
-    total_value: Optional[int] = Field(None, ge=0, description="Total value in cents, must be >= 0")
-    discount: Optional[int] = Field(None, ge=0, description="Discount in cents, must be >= 0")
+    subtotal: Optional[int] = Field(None, description="Subtotal in cents")
+    total_cost: Optional[int] = Field(None, description="Total cost in cents")
+    total_value: Optional[int] = Field(None, description="Total value in cents")
+    discount: Optional[int] = Field(None, description="Discount in cents")
     tax_rate: Optional[float] = Field(None, ge=0, le=100, description="Tax rate as percentage (0-100)")
     payment_method: Optional[str] = None
     payment_status: Optional[str] = None
     due_date: Optional[datetime] = None
     notes: Optional[str] = None
+    # BATCH SAVING: Campos para arrays aninhados
+    items: Optional[List[dict]] = Field(None, description="Items to create/update")
+    expenses: Optional[List[dict]] = Field(None, description="Expenses to create/update")
+    crew: Optional[List[dict]] = Field(None, description="Crew members to create/update")
 
     @field_validator('deadline', 'due_date', mode='before')
     @classmethod
@@ -56,6 +60,23 @@ class ProductionUpdate(BaseModel):
         if v is not None and (v < 0 or v > 100):
             raise ValueError(f"Tax rate must be between 0 and 100, got {v}")
         return v
+    
+    @field_validator('items', 'expenses', 'crew', mode='before')
+    @classmethod
+    def strip_negative_ids(cls, v):
+        """🔒 SEGURANÇA: Remove IDs negativos que o frontend envia para novos itens."""
+        if v is None:
+            return v
+        
+        cleaned = []
+        for item in v:
+            if isinstance(item, dict):
+                # Remove 'id' se for negativo (marcador temporário do frontend)
+                item_id = item.get('id')
+                if item_id is not None and item_id < 0:
+                    item.pop('id', None)
+            cleaned.append(item)
+        return cleaned
 
 
 class ProductionResponse(BaseModel):
@@ -90,8 +111,7 @@ class ProductionResponse(BaseModel):
     expenses: List[ExpenseResponse] = []
     crew: List[ProductionCrewResponse] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ProductionCrewResponse(BaseModel):
@@ -115,5 +135,4 @@ class ProductionCrewResponse(BaseModel):
     # Only their own crew information
     crew: List[ProductionCrewMemberRestricted] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

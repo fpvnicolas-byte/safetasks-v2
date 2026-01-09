@@ -6,6 +6,10 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
+from dotenv import load_dotenv
+
+# Força o carregamento do .env local
+load_dotenv()
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -77,6 +81,7 @@ async def run_async_migrations() -> None:
             {"sqlalchemy.url": database_url},
             prefix="sqlalchemy.",
             poolclass=pool.NullPool,
+            connect_args={"ssl": "require", "statement_cache_size": 0},
         )
     else:
         # Fallback para configuração local (desenvolvimento)
@@ -84,6 +89,7 @@ async def run_async_migrations() -> None:
             config.get_section(config.config_ini_section, {}),
             prefix="sqlalchemy.",
             poolclass=pool.NullPool,
+            connect_args={"ssl": "require", "statement_cache_size": 0},
         )
 
     async with connectable.connect() as connection:

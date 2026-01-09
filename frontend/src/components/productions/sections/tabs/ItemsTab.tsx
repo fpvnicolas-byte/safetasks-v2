@@ -1,104 +1,45 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Package, Plus, X } from 'lucide-react';
 import { Button } from '../../../../components/ui/button';
 import { Input } from '../../../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
-import { servicesApi, productionsApi } from '../../../../lib/api';
 import { formatCurrency } from '../../../../lib/utils';
-import { useSWRConfig } from 'swr';
-import { toast } from 'sonner';
+import { ProductionItemResponse, ServiceResponse } from '../ProductionEditSheet'; // Import types from parent
 
 interface ItemsTabProps {
-  selectedProduction: any;
-  services: any[];
-  selectedService: any;
-  newItemQuantity: number;
-  onServicesChange: (services: any[]) => void;
-  onSelectedServiceChange: (service: any) => void;
-  onNewItemQuantityChange: (quantity: number) => void;
-  onFetchServices: () => Promise<void>;
-  onUpdateSelectedProduction: (production: any) => void;
+  items: ProductionItemResponse[]; // Receives the local state from parent (including negative IDs)
+  services: ServiceResponse[]; // Options for the select
+  selectedService: ServiceResponse | null; // Local state of parent for current selection
+  newItemQuantity: number; // Local state of parent for new item quantity
+  onSelectedServiceChange: (service: ServiceResponse | null) => void; // Parent setter
+  onNewItemQuantityChange: (quantity: number) => void; // Parent setter
+  onFetchServices: () => Promise<void>; // Parent fetcher
+  onAddItem: (service: ServiceResponse, quantity: number) => void; // Parent handler
+  onRemoveItem: (itemId: number) => void; // Parent handler
 }
 
 export function ItemsTab({
-  selectedProduction,
+  items,
   services,
   selectedService,
   newItemQuantity,
-  onServicesChange,
   onSelectedServiceChange,
   onNewItemQuantityChange,
   onFetchServices,
-  onUpdateSelectedProduction
+  onAddItem,
+  onRemoveItem
 }: ItemsTabProps) {
-  const { mutate } = useSWRConfig();
-
-  const handleAddItem = async () => {
-    if (!selectedService || !selectedProduction) return;
-
-    try {
-      const itemData = {
-        service_id: selectedService.id,
-        quantity: newItemQuantity,
-      };
-
-      await productionsApi.addProductionItem(selectedProduction.id, itemData);
-
-      // Atualizar produção e dados financeiros
-      await mutate('/api/v1/productions');
-
-      // Buscar produção atualizada para atualizar o estado local
-      const response = await productionsApi.getProductions();
-      const updatedProduction = response.productionsList.find((p: any) => p.id === selectedProduction.id);
-      if (updatedProduction) {
-        onUpdateSelectedProduction(updatedProduction);
-      }
-
-      // Reset form
-      onSelectedServiceChange(null);
-      onNewItemQuantityChange(1);
-      toast.success('Item adicionado com sucesso!');
-    } catch (err: any) {
-      console.error("Erro ao adicionar item:", err);
-      if (err.response?.status === 500) {
-        toast.error("Erro de sincronização, atualizando...");
-      } else {
-        toast.error(err.response?.data?.detail || 'Erro ao adicionar item');
-      }
-    }
-  };
-
-  const handleRemoveItem = async (itemId: number) => {
-    if (!selectedProduction) return;
-
-    try {
-      await productionsApi.deleteProductionItem(selectedProduction.id, itemId);
-
-      // Atualizar produção e dados financeiros
-      await mutate('/api/v1/productions');
-
-      // Buscar produção atualizada para atualizar o estado local
-      const response = await productionsApi.getProductions();
-      const updatedProduction = response.productionsList.find((p: any) => p.id === selectedProduction.id);
-      if (updatedProduction) {
-        onUpdateSelectedProduction(updatedProduction);
-      }
-
-      toast.success('Item removido com sucesso!');
-    } catch (err: any) {
-      console.error("Erro ao remover item:", err);
-      toast.error('Erro ao remover item');
-    }
-  };
 
   return (
     <div className="space-y-6">
       {/* Formulário para adicionar itens */}
       <div className="bg-slate-900/50 rounded-xl p-4 border border-white/10">
-        <h4 className="text-sm font-medium text-slate-50 mb-4">Adicionar Serviço</h4>
+        <div className="flex items-center gap-2 mb-4">
+          <Package className="h-4 w-4 text-slate-400" />
+          <h4 className="text-sm font-medium text-slate-50">Adicionar Serviço</h4>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <Select
@@ -149,7 +90,7 @@ export function ItemsTab({
           </div>
           <div>
             <Button
-              onClick={handleAddItem}
+              onClick={() => onAddItem(selectedService as ServiceResponse, newItemQuantity)}
               disabled={!selectedService}
               className="w-full bg-emerald-600 hover:bg-emerald-700"
             >
@@ -162,9 +103,12 @@ export function ItemsTab({
 
       {/* Lista de itens */}
       <div className="space-y-4">
-        {selectedProduction.items && selectedProduction.items.length > 0 ? (
-          selectedProduction.items.map((item: any) => (
-            <div key={item.id} className="bg-white/5 rounded-xl p-4 border border-white/10">
+        {items && items.length > 0 ? (
+          items.map((item: ProductionItemResponse, index: number) => (
+            <div 
+              key={item.id > 0 ? `item-${item.id}` : `temp-item-${index}-${item.name}`}
+              className="bg-white/5 rounded-xl p-4 border border-white/10"
+            >
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <Package className="h-4 w-4 text-slate-400 mr-3" />
@@ -180,7 +124,7 @@ export function ItemsTab({
                     {formatCurrency(item.total_price)}
                   </p>
                   <Button
-                    onClick={() => handleRemoveItem(item.id)}
+                    onClick={() => onRemoveItem(item.id)}
                     variant="ghost"
                     size="sm"
                     className="text-red-400 hover:text-red-300"

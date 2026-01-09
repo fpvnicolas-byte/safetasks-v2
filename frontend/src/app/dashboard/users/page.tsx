@@ -25,7 +25,7 @@ import { toast } from 'sonner';
 
 // Interfaces baseadas nos schemas do backend
 interface User {
-  id: number;
+  id: string;
   email: string;
   full_name: string;
   organization_id: number;
@@ -111,7 +111,7 @@ export default function UsersPage() {
     }
   };
 
-  const handleToggleUserStatus = async (userId: number) => {
+  const handleToggleUserStatus = async (userId: string) => {
     const user = users.find(u => u.id === userId);
     if (user) {
       setUserToDelete(user);
@@ -136,13 +136,14 @@ export default function UsersPage() {
     } catch (err: any) {
       console.error("Erro ao alterar status do usuário:", err);
       toast.error("Erro ao alterar status do usuário");
-    } finally {
+    }
+    finally {
       setUserToDelete(null);
       setActionType(null);
     }
   };
 
-  const handleDeleteUser = async (userId: number) => {
+  const handleDeleteUser = async (userId: string) => {
     const user = users.find(u => u.id === userId);
     if (user) {
       setUserToDelete(user);
@@ -165,7 +166,8 @@ export default function UsersPage() {
     } catch (err: any) {
       console.error("Erro ao excluir usuário:", err);
       toast.error("Erro ao excluir usuário");
-    } finally {
+    }
+    finally {
       setUserToDelete(null);
       setActionType(null);
     }

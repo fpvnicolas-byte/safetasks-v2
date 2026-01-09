@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class ServiceCreate(BaseModel):
@@ -16,8 +16,7 @@ class ServiceResponse(BaseModel):
     unit: str | None
     organization_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ServiceCrewRead(BaseModel):
@@ -28,5 +27,4 @@ class ServiceCrewRead(BaseModel):
     unit: str | None
     organization_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

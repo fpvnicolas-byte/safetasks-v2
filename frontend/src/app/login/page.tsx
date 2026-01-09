@@ -7,7 +7,7 @@ import Cookies from 'js-cookie';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
-import { authApi } from '../../lib/api';
+import { supabaseAuthApi } from '../../lib/api';
 import { ArrowLeft, Film } from 'lucide-react';
 
 export default function LoginPage() {
@@ -16,6 +16,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [message, setMessage] = useState('');
   const router = useRouter();
 
   // Verificar se usuário já está logado ao carregar a página
@@ -46,6 +47,23 @@ export default function LoginPage() {
       }
     };
 
+    // Verificar mensagens da URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlMessage = urlParams.get('message');
+
+    if (urlMessage === 'email_verification_expired') {
+      setMessage('O link de confirmação expirou. Solicite um novo email de confirmação ou tente fazer login novamente.');
+    } else if (urlMessage === 'email_confirmed') {
+      setMessage('Email confirmado com sucesso! Você pode fazer login agora.');
+    }
+
+    // Limpar parâmetros da URL
+    if (urlMessage) {
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('message');
+      window.history.replaceState({}, '', newUrl.toString());
+    }
+
     checkIfAlreadyLoggedIn();
   }, [router]);
 
@@ -55,28 +73,34 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const response = await authApi.login(email, password);
+      const response = await supabaseAuthApi.login(email, password);
 
-      // Store token securely in both localStorage and cookie
-      const token = response.access_token;
-      localStorage.setItem('token', token);
+      // ✅ SUPABASE GERENCIA A SESSÃO AUTOMATICAMENTE
+      // ✅ INTERCEPTOR PEGA TOKEN DIRETAMENTE DA SESSÃO
 
       // Store in cookie for middleware (expires in 24 hours)
-      Cookies.set('token', token, {
+      Cookies.set('token', response.access_token, {
         expires: 1, // 1 day
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict'
       });
+
+      // ✅ AGUARDAR SESSÃO SER ESTABELECIDA (500ms)
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       // Redirect to dashboard
       router.push('/dashboard');
     } catch (err: any) {
       const detail = err.response?.data?.detail;
 
-      // FastAPI can return detail as string or array of objects
+      // Handle different types of errors
       let errorMessage = 'Erro ao fazer login';
 
-      if (typeof detail === 'string') {
+      if (err.message && err.message.includes('Email não confirmado')) {
+        // ✅ EMAIL CONFIRMATION ERROR
+        errorMessage = 'Email não confirmado. Verifique sua caixa de entrada e clique no link de confirmação.';
+        // Could redirect to verify-email page here
+      } else if (typeof detail === 'string') {
         errorMessage = detail;
       } else if (Array.isArray(detail)) {
         // If it's an array of validation errors, get the first one
@@ -177,6 +201,12 @@ export default function LoginPage() {
                   className="bg-slate-900/50 border-slate-700 text-white focus:border-emerald-500 transition-colors"
                 />
               </div>
+
+              {message && (
+                <div className="text-sm text-blue-400 bg-blue-500/10 border border-blue-500/20 rounded-md p-3">
+                  {message}
+                </div>
+              )}
 
               {error && (
                 <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-md p-3">

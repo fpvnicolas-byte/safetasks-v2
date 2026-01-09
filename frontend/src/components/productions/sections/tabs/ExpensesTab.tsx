@@ -5,92 +5,42 @@ import { FileText, Plus, X } from 'lucide-react';
 import { Button } from '../../../../components/ui/button';
 import { Input } from '../../../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
-import { productionsApi } from '../../../../lib/api';
 import { formatCurrency } from '../../../../lib/utils';
-import { useSWRConfig } from 'swr';
-import { toast } from 'sonner';
+
+// Import the ExpenseResponse type from parent component
+interface ExpenseResponse {
+  id: number;
+  production_id?: number;
+  name: string;
+  value: number;
+  category: string;
+  paid_by?: string;
+}
 
 interface ExpensesTabProps {
-  selectedProduction: any;
+  expenses: ExpenseResponse[]; // Receives the local state from parent (including negative IDs)
   newExpenseName: string;
   newExpenseValue: number;
   newExpenseCategory: string;
   onNewExpenseNameChange: (name: string) => void;
   onNewExpenseValueChange: (value: number) => void;
   onNewExpenseCategoryChange: (category: string) => void;
-  onUpdateSelectedProduction: (production: any) => void;
+  onAddExpense: (name: string, value: number, category: string) => void; // Parent handler
+  onRemoveExpense: (expenseId: number) => void; // Parent handler
 }
 
 export function ExpensesTab({
-  selectedProduction,
+  expenses,
   newExpenseName,
   newExpenseValue,
   newExpenseCategory,
   onNewExpenseNameChange,
   onNewExpenseValueChange,
   onNewExpenseCategoryChange,
-  onUpdateSelectedProduction
+  onAddExpense,
+  onRemoveExpense
 }: ExpensesTabProps) {
-  const { mutate } = useSWRConfig();
-
-  const handleAddExpense = async () => {
-    if (!selectedProduction || !newExpenseName.trim() || newExpenseValue <= 0) return;
-
-    try {
-      const expenseData = {
-        name: newExpenseName.trim(),
-        value: Math.round(newExpenseValue * 100), // Converter para centavos
-        category: newExpenseCategory || null,
-      };
-
-      await productionsApi.addExpense(selectedProduction.id, expenseData);
-
-      // Atualizar produção e dados financeiros
-      await mutate('/api/v1/productions');
-
-      // Buscar produção atualizada para atualizar o estado local
-      const response = await productionsApi.getProductions();
-      const updatedProduction = response.productionsList.find((p: any) => p.id === selectedProduction.id);
-      if (updatedProduction) {
-        onUpdateSelectedProduction(updatedProduction);
-      }
-
-      // Reset form
-      onNewExpenseNameChange('');
-      onNewExpenseValueChange(0);
-      onNewExpenseCategoryChange('');
-      toast.success('Despesa adicionada com sucesso!');
-    } catch (err: any) {
-      console.error("Erro ao adicionar despesa:", err);
-      if (err.response?.status === 500) {
-        toast.error("Erro de sincronização, atualizando...");
-      } else {
-        toast.error(err.response?.data?.detail || 'Erro ao adicionar despesa');
-      }
-    }
-  };
-
-  const handleRemoveExpense = async (expenseId: number) => {
-    if (!selectedProduction) return;
-
-    try {
-      await productionsApi.removeExpense(selectedProduction.id, expenseId);
-
-      await mutate('/api/v1/productions');
-
-      // Buscar produção atualizada para atualizar o estado local
-      const response = await productionsApi.getProductions();
-      const updatedProduction = response.productionsList.find((p: any) => p.id === selectedProduction.id);
-      if (updatedProduction) {
-        onUpdateSelectedProduction(updatedProduction);
-      }
-
-      toast.success('Despesa removida com sucesso!');
-    } catch (err: any) {
-      console.error("Erro ao remover despesa:", err);
-      toast.error('Erro ao remover despesa');
-    }
-  };
+  // Removed direct API calls - now uses local state management like other tabs
 
   return (
     <div className="space-y-6">
@@ -142,7 +92,7 @@ export function ExpensesTab({
           </div>
           <div className="md:col-span-3">
             <Button
-              onClick={handleAddExpense}
+              onClick={() => onAddExpense(newExpenseName, newExpenseValue, newExpenseCategory)}
               disabled={!newExpenseName.trim() || newExpenseValue <= 0}
               className="w-full bg-emerald-600 hover:bg-emerald-700"
             >
@@ -155,10 +105,13 @@ export function ExpensesTab({
 
       {/* Lista de despesas */}
       <div className="space-y-4">
-        {selectedProduction.expenses && selectedProduction.expenses.length > 0 ? (
+        {expenses && expenses.length > 0 ? (
           <>
-            {selectedProduction.expenses.map((expense: any) => (
-              <div key={expense.id} className="bg-white/5 rounded-xl p-4 border border-white/10">
+            {expenses.map((expense: ExpenseResponse, index: number) => (
+              <div
+                key={expense.id > 0 ? `expense-${expense.id}` : `temp-expense-${index}-${expense.name}`}
+                className="bg-white/5 rounded-xl p-4 border border-white/10"
+              >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <FileText className="h-4 w-4 text-slate-400 mr-3" />
@@ -174,7 +127,7 @@ export function ExpensesTab({
                       {formatCurrency(expense.value)}
                     </p>
                     <Button
-                      onClick={() => handleRemoveExpense(expense.id)}
+                      onClick={() => onRemoveExpense(expense.id)}
                       variant="ghost"
                       size="sm"
                       className="text-red-400 hover:text-red-300"
@@ -195,10 +148,10 @@ export function ExpensesTab({
                 </div>
                 <div className="text-right">
                   <p className="text-lg font-mono font-bold text-slate-50">
-                    {formatCurrency(selectedProduction.expenses.reduce((total: number, expense: any) => total + expense.value, 0))}
+                    {formatCurrency(expenses.reduce((total: number, expense: ExpenseResponse) => total + (expense.value || 0), 0))}
                   </p>
                   <p className="text-xs text-slate-400">
-                    {selectedProduction.expenses.length} despesa{selectedProduction.expenses.length !== 1 ? 's' : ''}
+                    {expenses.length} despesa{expenses.length !== 1 ? 's' : ''}
                   </p>
                 </div>
               </div>

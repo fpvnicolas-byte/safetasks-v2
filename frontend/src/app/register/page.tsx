@@ -6,7 +6,8 @@ import Link from 'next/link';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
-import { authApi } from '../../lib/api';
+import { supabaseAuthApi } from '../../lib/api';
+import { supabase } from '../../lib/supabase';
 import { Toaster, toast } from 'sonner';
 import { ArrowLeft } from 'lucide-react';
 
@@ -38,9 +39,27 @@ function RegisterForm() {
         setError('');
 
         try {
-            await authApi.registerOwner(formData);
-            toast.success('Conta criada com sucesso! Faça login para continuar.');
-            router.push('/login');
+            // 🔄 FAZER LOGOUT DE QUALQUER SESSÃO ANTES DE REGISTRAR
+            console.log('🔄 Fazendo logout de sessões antigas antes do registro...');
+            await supabase.auth.signOut();
+
+            // Pequena pausa para garantir que o logout seja processado
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            const result = await supabaseAuthApi.registerOwner(formData);
+
+            if (result.requiresEmailConfirmation) {
+                // ✅ EMAIL CONFIRMATION NECESSÁRIO
+                toast.success('Conta criada! Verifique seu email para confirmar.');
+                router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
+            } else if (result.session) {
+                // ✅ EMAIL CONFIRMATION DESABILITADO (modo dev)
+                toast.success('Conta criada com sucesso! Bem-vindo!');
+                router.push('/dashboard');
+            } else {
+                // Unexpected case
+                toast.error('Erro inesperado no registro. Tente novamente.');
+            }
         } catch (err: any) {
             const detail = err.response?.data?.detail;
             let errorMessage = 'Erro ao criar conta';

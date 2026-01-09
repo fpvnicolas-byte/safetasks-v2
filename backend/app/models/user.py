@@ -1,6 +1,8 @@
-from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String
+import uuid
+from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 
 from app.db.base_class import Base
 
@@ -26,12 +28,33 @@ class Organization(Base):
 
     # Relationships
     users = relationship("User", back_populates="organization")
+    profiles = relationship("Profile", back_populates="organization")
     clients = relationship("Client", back_populates="organization")
     services = relationship("Service", back_populates="organization")
     productions = relationship("Production", back_populates="organization")
 
 
+class Profile(Base):
+    """Profile table that extends Supabase auth.users"""
+    __tablename__ = "profiles"
+
+    # References auth.users(id)
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    email: Mapped[str] = mapped_column(String, nullable=True)
+    full_name: Mapped[str] = mapped_column(String, nullable=True)
+    organization_id: Mapped[int] = mapped_column(Integer, ForeignKey("organizations.id"), nullable=True)
+    role: Mapped[str] = mapped_column(String, default="user")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now())
+    updated_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now(), onupdate=func.now())
+
+    # Relationships
+    organization = relationship("Organization", back_populates="profiles")
+    crew_assignments = relationship("ProductionCrew", back_populates="user", cascade="all, delete-orphan")
+
+
 class User(Base):
+    """Legacy user table - kept for backward compatibility during migration"""
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -44,4 +67,4 @@ class User(Base):
 
     # Relationships
     organization = relationship("Organization", back_populates="users")
-    crew_assignments = relationship("ProductionCrew", back_populates="user", cascade="all, delete-orphan")
+    # Note: crew_assignments relationship moved to Profile model since ProductionCrew now references Profile
