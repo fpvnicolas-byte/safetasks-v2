@@ -66,8 +66,16 @@ async def get_current_user(
         raise credentials_exception
 
     # Get user profile from database
-    result = await db.execute(select(Profile).where(Profile.id == user_id))
-    user_profile = result.scalar_one_or_none()
+    try:
+        print(f"🔍 DB QUERY START: Buscando profile para {user_id}")
+        result = await db.execute(select(Profile).where(Profile.id == user_id))
+        user_profile = result.scalar_one_or_none()
+        print(f"✅ DB QUERY SUCCESS: Profile encontrado? {user_profile is not None}")
+    except Exception as e:
+        print(f"❌ DB QUERY FAILED: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise e
 
     if user_profile is None:
         raise HTTPException(
@@ -170,8 +178,16 @@ async def get_current_supabase_user(
         raise credentials_exception
 
     # Get user profile from database
-    result = await db.execute(select(Profile).where(Profile.id == user_id))
-    user_profile = result.scalar_one_or_none()
+    try:
+        print(f"🔍 DB QUERY START: Buscando profile para {user_id}")
+        result = await db.execute(select(Profile).where(Profile.id == user_id))
+        user_profile = result.scalar_one_or_none()
+        print(f"✅ DB QUERY SUCCESS: Profile encontrado? {user_profile is not None}")
+    except Exception as e:
+        print(f"❌ DB QUERY FAILED: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise e
 
     if user_profile is None:
         raise HTTPException(
