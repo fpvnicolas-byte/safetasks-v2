@@ -82,7 +82,7 @@ if raw_cors_origins:
     origins_list = [origin.strip() for origin in raw_cors_origins.split(",") if origin.strip()]
 else:
     # Fallback de segurança: se a variável estiver vazia, usa estes padrões
-    origins_list = ["https://safetasks-frontend.onrender.com", "http://localhost:3000"]
+    origins_list = ["https://safetasks-frontend-production.up.railway.app", "http://localhost:3000"]
 
 # Log para confirmar no terminal do Render
 logger.info(f"🔒 MANUAL CORS ORIGINS LOADED: {origins_list}")
