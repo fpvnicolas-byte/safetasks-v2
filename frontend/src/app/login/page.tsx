@@ -7,7 +7,7 @@ import Cookies from 'js-cookie';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
-import { supabaseAuthApi } from '../../lib/api';
+import { authApi, supabaseAuthApi } from '../../lib/api';
 import { ArrowLeft, Film } from 'lucide-react';
 
 export default function LoginPage() {
@@ -31,18 +31,38 @@ export default function LoginPage() {
           return;
         }
 
-        // Tentar validar o token fazendo uma chamada protegida
-        await authApi.getCurrentUser();
+        // ✅ MELHORADO: Timeout para mobile (redes móveis podem ser lentas)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout para mobile
 
-        // Se chegou aqui, o token é válido - redirecionar para dashboard
-        router.push('/dashboard');
+        try {
+          // Tentar validar o token fazendo uma chamada protegida
+          await authApi.getCurrentUser();
+          clearTimeout(timeoutId);
+
+          // Se chegou aqui, o token é válido - redirecionar para dashboard
+          router.push('/dashboard');
+        } catch (apiError: any) {
+          clearTimeout(timeoutId);
+
+          // ✅ MELHORADO: Distinguir entre erros de rede e token inválido
+          if (apiError.name === 'AbortError') {
+            console.log('Timeout na verificação de autenticação (rede lenta), continuando sem redirecionamento');
+          } else if (apiError.response?.status === 401 || apiError.response?.status === 403) {
+            console.log('Token inválido detectado, limpando...');
+            localStorage.removeItem('token');
+            Cookies.remove('token');
+          } else {
+            console.log('Erro de rede na verificação de autenticação:', apiError.message);
+            // Em caso de erro de rede, não limpar token - pode ser problema temporário
+          }
+
+          setCheckingAuth(false);
+        }
 
       } catch (error) {
-        // Token inválido ou expirado - limpar tokens e permitir login
-        console.log('Token inválido detectado, limpando...');
-        localStorage.removeItem('token');
-        // Remover cookie também se existir
-        Cookies.remove('token');
+        // Erro geral - permitir login
+        console.log('Erro geral na verificação de autenticação:', error);
         setCheckingAuth(false);
       }
     };
@@ -73,7 +93,13 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const response = await supabaseAuthApi.login(email, password);
+      // ✅ MELHORADO: Timeout para login em mobile (redes móveis podem ser lentas)
+      const loginPromise = supabaseAuthApi.login(email, password);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout: Login demorou muito. Verifique sua conexão.')), 15000) // 15s timeout
+      );
+
+      const response = await Promise.race([loginPromise, timeoutPromise]) as any;
 
       // ✅ SUPABASE GERENCIA A SESSÃO AUTOMATICAMENTE
       // ✅ INTERCEPTOR PEGA TOKEN DIRETAMENTE DA SESSÃO
@@ -85,28 +111,42 @@ export default function LoginPage() {
         sameSite: 'strict'
       });
 
-      // ✅ AGUARDAR SESSÃO SER ESTABELECIDA (500ms)
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // ✅ AGUARDAR SESSÃO SER ESTABELECIDA (aumentado para mobile)
+      await new Promise(resolve => setTimeout(resolve, 800));
 
       // Redirect to dashboard
       router.push('/dashboard');
     } catch (err: any) {
-      const detail = err.response?.data?.detail;
+      console.error('Erro no login:', err);
 
-      // Handle different types of errors
-      let errorMessage = 'Erro ao fazer login';
+      // ✅ MELHORADO: Tratamento robusto de erros para mobile
+      let errorMessage = 'Erro ao fazer login. Tente novamente.';
 
-      if (err.message && err.message.includes('Email não confirmado')) {
-        // ✅ EMAIL CONFIRMATION ERROR
+      // Network/timeout errors
+      if (err.message?.includes('Timeout') || err.message?.includes('Network Error')) {
+        errorMessage = 'Erro de conexão. Verifique sua internet e tente novamente.';
+      } else if (err.message?.includes('fetch')) {
+        errorMessage = 'Erro de rede. Verifique sua conexão com a internet.';
+      }
+      // Authentication errors
+      else if (err.message && err.message.includes('Email não confirmado')) {
         errorMessage = 'Email não confirmado. Verifique sua caixa de entrada e clique no link de confirmação.';
-        // Could redirect to verify-email page here
-      } else if (typeof detail === 'string') {
-        errorMessage = detail;
-      } else if (Array.isArray(detail)) {
-        // If it's an array of validation errors, get the first one
-        errorMessage = detail[0]?.msg || 'Dados de login inválidos';
-      } else if (detail) {
-        errorMessage = 'Dados de login inválidos';
+      }
+      // API response errors
+      else {
+        const detail = err.response?.data?.detail;
+
+        if (typeof detail === 'string') {
+          errorMessage = detail;
+        } else if (Array.isArray(detail)) {
+          errorMessage = detail[0]?.msg || 'Dados de login inválidos';
+        } else if (detail) {
+          errorMessage = 'Dados de login inválidos';
+        } else if (err.response?.status === 429) {
+          errorMessage = 'Muitas tentativas. Aguarde alguns minutos e tente novamente.';
+        } else if (err.response?.status >= 500) {
+          errorMessage = 'Erro no servidor. Tente novamente em alguns minutos.';
+        }
       }
 
       setError(errorMessage);

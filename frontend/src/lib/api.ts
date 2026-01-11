@@ -10,6 +10,27 @@ export const api = axios.create({
   },
 });
 
+// ✅ SEGURANÇA: Detecção automática de IP APENAS em desenvolvimento
+// Isso NÃO afeta produção - só ativa quando:
+// 1. NODE_ENV === 'development'
+// 2. NEXT_PUBLIC_ENABLE_IP_DETECTION === 'true'
+// 3. Acessado via IP (não localhost)
+// 4. Hostname é um IP válido
+if (typeof window !== 'undefined' &&
+    process.env.NODE_ENV === 'development' &&
+    process.env.NEXT_PUBLIC_ENABLE_IP_DETECTION === 'true' &&
+    window.location.hostname !== 'localhost' &&
+    window.location.hostname !== '127.0.0.1' &&
+    /^\d+\.\d+\.\d+\.\d+$/.test(window.location.hostname)) {
+
+  // Usar IP correspondente do backend (porta 8000)
+  const devApiUrl = `http://${window.location.hostname}:8000/api/v1`;
+  api.defaults.baseURL = devApiUrl;
+
+  console.log(`🔧 DEV MODE: API detectada via IP - Usando ${devApiUrl}`);
+  console.log(`🔒 PROD SAFE: Esta configuração NÃO afeta produção`);
+}
+
 // Request interceptor to add auth token
 api.interceptors.request.use((config) => {
   // ✅ CORREÇÃO: Usar Promise para lidar com async corretamente

@@ -15,7 +15,7 @@ import {
   X
 } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
-import { authApi, organizationsApi } from '../../lib/api';
+import { authApi, organizationsApi, supabaseAuthApi } from '../../lib/api';
 import { useDesignTokens } from '../../lib/hooks/use-design-tokens';
 import { AccessibilityPanel } from '../../components/dev/accessibility-panel';
 import { SubscriptionGuard } from '../../components/SubscriptionGuard';
@@ -106,9 +106,41 @@ export default function DashboardLayout({
     fetchUserAndOrgSettings();
   }, [pathname, router]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    window.location.href = '/login';
+  const handleLogout = async () => {
+    try {
+      // 1. Fazer logout do Supabase primeiro (remove sessão)
+      await supabaseAuthApi.logout();
+
+      // 2. Limpar dados do localStorage
+      localStorage.removeItem('token');
+
+      // 3. Limpar cache do navegador (service workers, cache storage)
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(
+          cacheNames.map(cacheName => caches.delete(cacheName))
+        );
+      }
+
+      // 4. Limpar sessionStorage se existir
+      sessionStorage.clear();
+
+      // 5. Pequeno delay para garantir que tudo foi limpo
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // 6. Forçar refresh completo da página para limpar qualquer estado residual
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Erro durante logout:', error);
+      // Fallback: tentar limpar mesmo com erro
+      try {
+        localStorage.removeItem('token');
+        sessionStorage.clear();
+      } catch (fallbackError) {
+        console.error('Erro no fallback de limpeza:', fallbackError);
+      }
+      window.location.href = '/login';
+    }
   };
 
   const trialDaysRemaining = useMemo(() => {
@@ -229,7 +261,7 @@ export default function DashboardLayout({
       {/* Main content */}
       <main
         id="main-content"
-        className="flex-1 flex flex-col min-h-screen md:pl-64"
+        className="flex-1 flex flex-col min-h-screen md:pl-[280px]"
       >
         <SubscriptionGuard>
           {/* Trial Status Banner */}

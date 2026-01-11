@@ -56,14 +56,6 @@ export function Sidebar({
     }
   };
 
-  // Função blindada para trigger de logout
-  const triggerLogout = (e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    console.log("LOGOUT ACIONADO VIA", e.type);
-    handleLogoutClick();
-  };
-
   // Close sidebar when clicking outside on mobile
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -86,7 +78,7 @@ export function Sidebar({
       {/* Sidebar Desktop - SEMPRE visível em lg */}
       <aside
         ref={sidebarRef}
-        className="hidden lg:flex lg:flex-col lg:fixed lg:left-0 lg:top-0 lg:h-[100dvh] lg:w-64 lg:z-10 lg:overflow-y-auto"
+        className="hidden lg:flex lg:flex-col lg:fixed lg:left-0 lg:top-0 lg:h-[100dvh] lg:w-[280px] lg:z-10 lg:overflow-y-auto"
         style={{
           backgroundColor: colors.glass.dark,
           backdropFilter: 'blur(12px)',
@@ -184,10 +176,10 @@ export function Sidebar({
               borderTop: `1px solid ${colors.glass.border}`,
             }}
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center min-w-0 flex-1">
                 <div
-                  className="h-9 w-9 rounded-full flex items-center justify-center"
+                  className="h-9 w-9 rounded-full flex items-center justify-center flex-shrink-0"
                   style={{
                     backgroundColor: colors.glass.light,
                   }}
@@ -202,9 +194,9 @@ export function Sidebar({
                     {user?.full_name?.charAt(0)?.toUpperCase() || 'U'}
                   </span>
                 </div>
-                <div className="ml-3">
+                <div className="ml-3 min-w-0 flex-1">
                   <p
-                    className="text-sm font-medium truncate max-w-[120px]"
+                    className="text-sm font-medium truncate max-w-[140px]"
                     style={{
                       color: colors.slate[200],
                       fontFamily: 'Inter, system-ui, sans-serif',
@@ -226,7 +218,7 @@ export function Sidebar({
               <button
                 type="button"
                 onClick={handleLogoutClick}
-                className="p-3 rounded-lg transition-colors focus:outline-none hover:bg-white/5 active:bg-white/10"
+                className="p-3 rounded-lg transition-colors focus:outline-none hover:bg-white/5 active:bg-white/10 flex-shrink-0"
                 style={{
                   ...focusRing(colors.primary[500]),
                   borderRadius: borderRadius.md,
@@ -234,9 +226,9 @@ export function Sidebar({
                 title="Sair"
                 aria-label="Fazer logout"
               >
-                <LogOut 
-                  className="h-5 w-5 text-slate-400 transition-colors hover:text-slate-200" 
-                  aria-hidden="true" 
+                <LogOut
+                  className="h-5 w-5 text-slate-400 transition-colors hover:text-slate-200"
+                  aria-hidden="true"
                 />
               </button>
             </div>
@@ -253,12 +245,12 @@ export function Sidebar({
           }
         }}
         className={`
-          fixed left-0 top-0 h-[100dvh] w-64 z-50 overflow-y-auto
+          fixed left-0 top-0 bottom-0 h-[100dvh] w-64 z-50 overflow-y-auto
           bg-slate-950/95 backdrop-blur-2xl
           border-r border-white/10 shadow-2xl
           transition-transform duration-300 ease-in-out
           pb-24 md:pb-0  // Safe area para botões não ficarem escondidos na barra do OS
-          
+
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
         aria-label="Menu de navegação"
@@ -384,8 +376,7 @@ export function Sidebar({
               </div>
               <button
                 type="button"
-                onClick={triggerLogout}
-                onTouchEnd={triggerLogout}
+                onClick={handleLogoutClick}
                 className="w-full min-h-[50px] flex items-center justify-center gap-3 p-3 rounded-lg
                            active:scale-95 active:bg-white/10 transition-all cursor-pointer
                            hover:bg-white/5"
@@ -396,9 +387,9 @@ export function Sidebar({
                 title="Sair"
                 aria-label="Fazer logout"
               >
-                <LogOut 
-                  className="h-5 w-5 text-slate-400 transition-colors hover:text-slate-200" 
-                  aria-hidden="true" 
+                <LogOut
+                  className="h-5 w-5 text-slate-400 transition-colors hover:text-slate-200"
+                  aria-hidden="true"
                 />
                 <span className="text-sm font-medium text-slate-300">Sair</span>
               </button>
