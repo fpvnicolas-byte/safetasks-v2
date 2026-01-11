@@ -7,6 +7,7 @@ import { TrendingUp, Receipt, DollarSign, Target, Package, BarChart3, PieChart a
 import { dashboardApi } from '../../../lib/api';
 import { formatCurrency } from '../../../lib/utils';
 import { usePrivacy } from '../../../hooks/use-privacy';
+import { Skeleton } from '../../../components/ui/skeleton';
 
 interface DashboardData {
     total_revenue?: number;
@@ -66,10 +67,25 @@ export default function DashboardTestPage() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-400 mx-auto mb-4"></div>
-                    <p className="text-slate-400">Carregando dashboard executivo...</p>
+            <div className="p-6 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[1, 2, 3, 4].map((i) => (
+                        <div key={i} className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10">
+                            <Skeleton className="h-4 w-24 mb-4" />
+                            <Skeleton className="h-8 w-32 mb-2" />
+                            <Skeleton className="h-3 w-20" />
+                        </div>
+                    ))}
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10">
+                        <Skeleton className="h-6 w-48 mb-6" />
+                        <Skeleton className="h-64 w-full rounded-lg" />
+                    </div>
+                    <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10">
+                        <Skeleton className="h-6 w-48 mb-6" />
+                        <Skeleton className="h-64 w-full rounded-lg" />
+                    </div>
                 </div>
             </div>
         );

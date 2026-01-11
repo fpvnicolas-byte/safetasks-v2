@@ -20,6 +20,8 @@ import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { Badge } from '../../../components/ui/badge';
+import { CardSkeleton } from '../../../components/ui/card-skeleton';
+import { Skeleton } from '../../../components/ui/skeleton';
 import { useSWRConfig } from 'swr';
 import { toast } from 'sonner';
 
@@ -227,10 +229,26 @@ export default function UsersPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-400 mx-auto mb-4"></div>
-          <p className="text-slate-400">Carregando usuários...</p>
+      <div className="p-6 space-y-6 relative">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-20 left-20 w-72 h-72 rounded-full bg-linear-to-r from-blue-500/8 to-purple-500/8 blur-3xl" />
+          <div className="absolute bottom-32 right-32 w-96 h-96 rounded-full bg-linear-to-r from-emerald-500/5 to-cyan-500/5 blur-3xl" />
+        </div>
+
+        <div className="max-w-7xl mx-auto relative z-10 space-y-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-48" />
+              <Skeleton className="h-4 w-72" />
+            </div>
+            <Skeleton className="h-10 w-36" />
+          </div>
+
+          <div className="bg-slate-950/30 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 mb-6">
+            <Skeleton className="h-10 w-full" />
+          </div>
+
+          <CardSkeleton cards={6} columns={3} />
         </div>
       </div>
     );

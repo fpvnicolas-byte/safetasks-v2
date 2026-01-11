@@ -11,6 +11,8 @@ import { useSWRConfig } from 'swr';
 import { toast } from 'sonner';
 import { organizationsApi } from '../../../lib/api';
 import { useRouter } from 'next/navigation';
+import { FormSkeleton } from '../../../components/ui/form-skeleton';
+import { Skeleton } from '../../../components/ui/skeleton';
 
 interface OrganizationSettings {
   id: number;
@@ -199,10 +201,21 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-400 mx-auto mb-4"></div>
-          <p className="text-slate-400">Carregando configurações...</p>
+      <div className="p-6 space-y-6 relative">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-20 left-20 w-72 h-72 rounded-full bg-linear-to-r from-blue-500/8 to-purple-500/8 blur-3xl" />
+          <div className="absolute bottom-32 right-32 w-96 h-96 rounded-full bg-linear-to-r from-emerald-500/5 to-cyan-500/5 blur-3xl" />
+        </div>
+        <div className="max-w-4xl mx-auto relative z-10 space-y-6">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-12 w-12 rounded-lg" />
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-48" />
+              <Skeleton className="h-4 w-64" />
+            </div>
+          </div>
+          <Skeleton className="h-12 w-full" />
+          <FormSkeleton fields={6} showSubmit={false} />
         </div>
       </div>
     );

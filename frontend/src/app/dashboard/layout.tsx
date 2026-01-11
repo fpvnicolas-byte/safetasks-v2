@@ -2,13 +2,11 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation'; // Importante: useRouter adicionado
+import { usePathname, useRouter } from 'next/navigation';
 import {
-  BarChart3,
   Calendar,
   Film,
   Home,
-  LogOut,
   Users,
   Wrench,
   Eye,
@@ -21,8 +19,10 @@ import { authApi, organizationsApi } from '../../lib/api';
 import { useDesignTokens } from '../../lib/hooks/use-design-tokens';
 import { AccessibilityPanel } from '../../components/dev/accessibility-panel';
 import { SubscriptionGuard } from '../../components/SubscriptionGuard';
-import { Footer } from '../../components/Footer';
 import { usePrivacy, PrivacyContext } from '../../hooks/use-privacy';
+import { Sidebar, navigationItems } from '../../components/layout/Sidebar';
+import { MobileHeader } from '../../components/layout/MobileHeader';
+import { FullScreenLoader } from '../../components/ui/full-screen-loader';
 
 interface User {
   id: number;
@@ -41,22 +41,10 @@ interface OrganizationSettings {
   default_tax_rate: number;
   subscription_plan: string;
   subscription_status: string;
-  trial_ends_at: string | null; // ISO string
-  subscription_ends_at: string | null; // ISO string
+  trial_ends_at: string | null;
+  subscription_ends_at: string | null;
   billing_id: string | null;
 }
-
-const navigation = [
-  { name: 'Resumo', href: '/dashboard', icon: Home },
-  { name: 'Produções', href: '/dashboard/productions', icon: Film },
-  { name: 'Clientes', href: '/dashboard/clients', icon: Users },
-  { name: 'Equipe', href: '/dashboard/users', icon: Users },
-  { name: 'Serviços', href: '/dashboard/services', icon: Wrench },
-  { name: 'Calendário', href: '/dashboard/calendar', icon: Calendar },
-  { name: 'Configurações', href: '/dashboard/settings', icon: Settings },
-];
-
-
 
 export default function DashboardLayout({
   children,
@@ -68,32 +56,28 @@ export default function DashboardLayout({
   const [privacyMode, setPrivacyMode] = useState(false);
   const [organizationSettings, setOrganizationSettings] = useState<OrganizationSettings | null>(null);
   const [showTrialBanner, setShowTrialBanner] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
-  const router = useRouter(); // Importante: router inicializado aqui!
+  const router = useRouter();
 
-  // Design tokens para consistência visual
   const {
     colors,
-    spacing,
-    borderRadius,
     shadows,
     transitions,
-    glassEffect,
+    borderRadius,
     focusRing
   } = useDesignTokens();
 
   // Filter navigation based on role
-  const filteredNavigation = navigation.filter(item => {
-    if (!user) return false;
-    if (user.role === 'admin') return true;
+  const filteredNavigation = useMemo(() => {
+    return navigationItems.filter(item => {
+      if (!user) return false;
+      if (user.role === 'admin') return true;
+      return ['/dashboard', '/dashboard/productions', '/dashboard/calendar'].includes(item.href);
+    });
+  }, [user]);
 
-    // Crew navigation whitelist
-    return ['/dashboard', '/dashboard/productions', '/dashboard/calendar'].includes(item.href);
-  });
-
-  // Define routes that should show the privacy toggle button (pages with financial data)
   const financialRoutes = ['/dashboard', '/dashboard/productions', '/dashboard/services'];
-  // Only show privacy button for admins on financial routes
   const shouldShowPrivacyButton = user?.role === 'admin' && financialRoutes.includes(pathname);
 
   useEffect(() => {
@@ -105,16 +89,13 @@ export default function DashboardLayout({
         const orgSettings = await organizationsApi.getSettings();
         setOrganizationSettings(orgSettings);
 
-        // Check if subscription was successful and show a toast
         const params = new URLSearchParams(window.location.search);
         if (params.get('subscription') === 'success') {
           toast.success("Assinatura realizada com sucesso! Bem-vindo ao seu novo plano.");
-          // Limpa o URL: Usar window.history.replaceState para remover o parâmetro 'subscription' sem recarregar a página
           const newUrl = new URL(window.location.href);
           newUrl.searchParams.delete('subscription');
-          window.history.replaceState({}, '', newUrl.toString()); // Sintaxe corrigida
+          window.history.replaceState({}, '', newUrl.toString());
         }
-
       } catch (error) {
         console.error('Failed to fetch user or organization settings:', error);
       } finally {
@@ -123,7 +104,7 @@ export default function DashboardLayout({
     };
 
     fetchUserAndOrgSettings();
-  }, [pathname, router]); // Adicionado router às dependências
+  }, [pathname, router]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -141,12 +122,7 @@ export default function DashboardLayout({
     return null;
   }, [organizationSettings]);
 
-  // Dynamic Background Orbs Configuration
-  // Fixed: Moved before conditional returns to follow Rules of Hooks
-  // Improved: Using explicit styles to ensure CSS transitions trigger reliably
   const orbStyles = useMemo(() => {
-    console.log(`[DashboardLayout] Detecting route change: ${pathname}`);
-
     if (pathname.startsWith('/dashboard/productions')) {
       return {
         orb1: { top: '10%', left: '-10%', width: '900px', height: '900px', backgroundColor: 'rgba(37, 99, 235, 0.4)' },
@@ -175,7 +151,6 @@ export default function DashboardLayout({
         orb3: { bottom: '10%', right: '10%', width: '500px', height: '500px', backgroundColor: 'rgba(16, 185, 129, 0.2)' },
       };
     }
-    // Default (Dashboard / Resumo)
     return {
       orb1: { top: '0%', left: '15%', width: '900px', height: '900px', backgroundColor: 'rgba(16, 185, 129, 0.4)' },
       orb2: { bottom: '5%', right: '5%', width: '1000px', height: '1000px', backgroundColor: 'rgba(59, 130, 246, 0.3)' },
@@ -184,11 +159,7 @@ export default function DashboardLayout({
   }, [pathname]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="text-slate-400">Carregando...</div>
-      </div>
-    );
+    return <FullScreenLoader />;
   }
 
   return (
@@ -202,7 +173,6 @@ export default function DashboardLayout({
           }} />
         </div>
 
-        {/* The Orbs - Using style for guaranteed movement transition */}
         <div
           className="absolute rounded-full blur-[150px] animate-breathing"
           style={{
@@ -233,19 +203,8 @@ export default function DashboardLayout({
 
       {/* Skip Links para acessibilidade */}
       <a
-        href="#navigation"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-[100] px-4 py-2 rounded-md font-medium transition-all duration-200"
-        style={{
-          backgroundColor: colors.primary[500],
-          color: colors.slate[50],
-          fontFamily: 'Inter, system-ui, sans-serif',
-        }}
-      >
-        Pular para navegação
-      </a>
-      <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-32 z-[100] px-4 py-2 rounded-md font-medium transition-all duration-200"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-[100] px-4 py-2 rounded-md font-medium transition-all duration-200"
         style={{
           backgroundColor: colors.primary[500],
           color: colors.slate[50],
@@ -255,172 +214,23 @@ export default function DashboardLayout({
         Pular para conteúdo principal
       </a>
 
-      {/* Sidebar */}
-      <nav
-        className="fixed left-0 top-0 h-screen w-64 z-10 overflow-y-auto"
-        style={{
-          backgroundColor: colors.glass.dark,
-          backdropFilter: 'blur(12px)',
-          borderRight: `1px solid ${colors.glass.border}`,
-          boxShadow: shadows.glass.medium,
-        }}
-      >
-        <div className="flex flex-col h-full">
-          {/* Logo */}
-          <header
-            className="flex items-center px-6 py-4"
-            style={{
-              borderBottom: `1px solid ${colors.glass.border}`,
-            }}
-          >
-            <Film
-              className="h-8 w-8"
-              style={{ color: colors.slate[400] }}
-              aria-hidden="true"
-            />
-            <span
-              className="ml-2 text-xl font-bold"
-              style={{
-                color: colors.slate[200],
-                fontFamily: 'Inter, system-ui, sans-serif',
-              }}
-            >
-              SafeTasks
-            </span>
-          </header>
+      {/* Sidebar - Desktop (fixed) / Mobile (drawer) */}
+      <Sidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        user={user}
+        filteredNavigation={filteredNavigation}
+        onLogout={handleLogout}
+      />
 
-          {/* Navigation */}
-          <nav id="navigation" className="flex-1 px-4 py-6">
-            <ul className="space-y-2" role="menubar">
-              {filteredNavigation.map((item) => {
-                const Icon = item.icon;
-                const isActive = pathname === item.href;
-
-                return (
-                  <li key={item.name} role="none">
-                    <Link
-                      href={item.href}
-                      className="group flex items-center px-3 py-2 text-sm font-medium rounded-xl transition-all duration-200 focus:outline-none"
-                      style={{
-                        ...focusRing(colors.primary[500]),
-                        backgroundColor: isActive ? colors.glass.light : 'transparent',
-                        color: isActive ? colors.slate[50] : colors.slate[400],
-                        boxShadow: isActive ? shadows.glass.soft : 'none',
-                        transition: transitions.normal,
-                        borderRadius: borderRadius.xl,
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!isActive) {
-                          e.currentTarget.style.backgroundColor = colors.glass.light;
-                          e.currentTarget.style.color = colors.slate[50];
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isActive) {
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                          e.currentTarget.style.color = colors.slate[400];
-                        }
-                      }}
-                      aria-current={isActive ? 'page' : undefined}
-                      role="menuitem"
-                    >
-                      <Icon
-                        className="mr-3 h-5 w-5 flex-shrink-0"
-                        style={{
-                          color: isActive ? colors.slate[50] : colors.slate[400],
-                          transition: transitions.normal,
-                        }}
-                        aria-hidden="true"
-                      />
-                      <span
-                        style={{
-                          color: isActive ? colors.slate[50] : colors.slate[400],
-                          fontFamily: 'Inter, system-ui, sans-serif',
-                          fontWeight: '500',
-                          transition: transitions.normal,
-                        }}
-                      >{item.name}</span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </nav>
-
-          {/* User section */}
-          <div
-            className="p-4"
-            style={{
-              borderTop: `1px solid ${colors.glass.border}`,
-            }}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <div
-                  className="h-8 w-8 rounded-full flex items-center justify-center"
-                  style={{
-                    backgroundColor: colors.glass.light,
-                  }}
-                >
-                  <span
-                    className="text-sm font-medium"
-                    style={{
-                      color: colors.slate[300],
-                      fontFamily: 'Inter, system-ui, sans-serif',
-                    }}
-                  >
-                    {user?.full_name?.charAt(0)?.toUpperCase() || 'U'}
-                  </span>
-                </div>
-                <div className="ml-3">
-                  <p
-                    className="text-sm font-medium"
-                    style={{
-                      color: colors.slate[200],
-                      fontFamily: 'Inter, system-ui, sans-serif',
-                    }}
-                  >
-                    {user?.full_name || 'Usuário'}
-                  </p>
-                  <p
-                    className="text-xs capitalize"
-                    style={{
-                      color: colors.slate[400],
-                      fontFamily: 'Inter, system-ui, sans-serif',
-                    }}
-                  >
-                    {user?.role === 'admin' ? 'Administrador' : 'Colaborador'}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="p-1 rounded transition-colors focus:outline-none"
-                style={{
-                  ...focusRing(colors.primary[500]),
-                  color: colors.slate[400],
-                  transition: transitions.normal,
-                  borderRadius: borderRadius.md,
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = colors.glass.light;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = colors.slate[400];
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }}
-                title="Sair"
-                aria-label="Fazer logout"
-              >
-                <LogOut className="h-4 w-4" aria-hidden="true" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+      {/* Mobile Header */}
+      <MobileHeader onOpenSidebar={() => setSidebarOpen(true)} />
 
       {/* Main content */}
-      <main id="main-content" className="ml-64 flex-1 flex flex-col min-h-screen overflow-auto">
+      <main
+        id="main-content"
+        className="flex-1 flex flex-col min-h-screen md:pl-64"
+      >
         <SubscriptionGuard>
           {/* Trial Status Banner */}
           {showTrialBanner && trialDaysRemaining !== null && trialDaysRemaining > 0 && (
@@ -441,7 +251,8 @@ export default function DashboardLayout({
               </button>
             </div>
           )}
-          {/* Header */}
+
+          {/* Dashboard Header */}
           <header
             className="px-6 py-4"
             style={{
@@ -454,16 +265,16 @@ export default function DashboardLayout({
             <div className="flex items-center justify-between">
               <div>
                 <h1
-                  className="text-2xl font-bold"
+                  className="text-xl sm:text-2xl font-bold"
                   style={{
                     color: colors.slate[200],
                     fontFamily: 'Inter, system-ui, sans-serif',
                   }}
                 >
-                  {navigation.find(item => item.href === pathname)?.name || 'Dashboard'}
+                  {navigationItems.find(item => item.href === pathname)?.name || 'Dashboard'}
                 </h1>
                 <p
-                  className="text-sm mt-1"
+                  className="text-sm mt-1 hidden sm:block"
                   style={{
                     color: colors.slate[400],
                     fontFamily: 'Inter, system-ui, sans-serif',
@@ -508,7 +319,7 @@ export default function DashboardLayout({
                     )}
                   </button>
                 )}
-                <div className="text-right">
+                <div className="text-right hidden sm:block">
                   <p
                     className="text-sm"
                     style={{

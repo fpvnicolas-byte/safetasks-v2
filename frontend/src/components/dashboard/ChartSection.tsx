@@ -5,8 +5,7 @@ import { Suspense } from 'react';
 
 // Lazy load recharts components to reduce initial bundle size
 const AreaChart = dynamic(() => import('recharts').then(mod => ({ default: mod.AreaChart })), {
-  ssr: false,
-  loading: () => <ChartSkeleton />
+  ssr: false
 });
 
 const Area = dynamic(() => import('recharts').then(mod => ({ default: mod.Area })), {
@@ -30,8 +29,7 @@ const Tooltip = dynamic(() => import('recharts').then(mod => ({ default: mod.Too
 });
 
 const PieChart = dynamic(() => import('recharts').then(mod => ({ default: mod.PieChart })), {
-  ssr: false,
-  loading: () => <ChartSkeleton />
+  ssr: false
 });
 
 const Pie = dynamic(() => import('recharts').then(mod => ({ default: mod.Pie })), {
@@ -78,7 +76,7 @@ export function ChartSection({
   hasRealClientsData = true
 }: ChartSectionProps) {
   return (
-    <Suspense fallback={<ChartSkeleton />}>
+    <Suspense fallback={null}>
       <div className="space-y-8">
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
@@ -94,7 +92,7 @@ export function ChartSection({
 
             {/* Aplica blur no gráfico quando dados fake */}
             <div className={`${!hasRealRevenueData ? 'blur-[0.3px] opacity-90' : ''}`}>
-              <div className="h-64">
+              <div className="h-[300px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={revenueChartData}>
                     <XAxis
@@ -161,7 +159,7 @@ export function ChartSection({
 
             {/* Aplica blur no gráfico quando dados fake */}
             <div className={`${!hasRealStatusData ? 'blur-[0.3px] opacity-90' : ''}`}>
-              <div className="h-64">
+              <div className="h-[300px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie

@@ -22,6 +22,8 @@ import { useSWRConfig } from 'swr';
 import { toast } from 'sonner';
 import { CardList } from '../../../components/ui/card-list';
 import { usePrivacy } from '../../../hooks/use-privacy';
+import { CardSkeleton } from '../../../components/ui/card-skeleton';
+import { Skeleton } from '../../../components/ui/skeleton';
 
 // Interface com tipagem rigorosa
 interface Service {
@@ -139,7 +141,26 @@ export default function ServicesPage() {
     privacyMode,
   }));
 
-  if (loading) return <div className="p-20 text-center animate-pulse text-slate-400">Sincronizando catálogo...</div>;
+  if (loading) return (
+    <div className="p-6 space-y-8 relative min-h-screen">
+      <div className="absolute inset-0 pointer-events-none opacity-20">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/10 blur-[120px] rounded-full" />
+      </div>
+      <div className="max-w-7xl mx-auto relative z-10">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
+          <div className="space-y-2">
+            <Skeleton className="h-10 w-64" />
+            <Skeleton className="h-6 w-96" />
+          </div>
+          <Skeleton className="h-10 w-36" />
+        </div>
+        <div className="relative group max-w-md mb-12">
+          <Skeleton className="h-12 w-full rounded-2xl" />
+        </div>
+        <CardSkeleton cards={6} columns={1} />
+      </div>
+    </div>
+  );
 
   return (
     <div className="p-6 space-y-8 relative min-h-screen">

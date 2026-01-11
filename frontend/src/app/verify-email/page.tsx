@@ -7,6 +7,7 @@ import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Mail, ArrowLeft, RefreshCw } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { FullScreenLoader } from '../../components/ui/full-screen-loader';
 
 function VerifyEmailForm() {
     const router = useRouter();
@@ -190,14 +191,7 @@ function VerifyEmailForm() {
 
 export default function VerifyEmailPage() {
     return (
-        <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center bg-slate-950">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto mb-4"></div>
-                    <p className="text-slate-400">Carregando...</p>
-                </div>
-            </div>
-        }>
+        <Suspense fallback={<FullScreenLoader />}>
             <VerifyEmailForm />
         </Suspense>
     );
