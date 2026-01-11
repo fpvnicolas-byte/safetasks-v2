@@ -140,7 +140,7 @@ export function ProductionGrid({
                       const isOpen = openDropdown === production.id.toString();
                       setOpenDropdown(isOpen ? null : production.id.toString());
                     }}
-                    className="h-8 w-8 p-0 text-slate-400 hover:text-blue-400 hover:bg-slate-800/50 opacity-0 group-hover:opacity-100 transition-all duration-200 rounded-lg"
+                    className="h-8 w-8 p-0 text-slate-400 hover:text-blue-400 hover:bg-slate-800/50 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all duration-200 rounded-lg"
                     aria-label={`Opções de download para ${production.title}`}
                     aria-expanded={openDropdown === production.id.toString()}
                   >
@@ -183,7 +183,7 @@ export function ProductionGrid({
                     e.stopPropagation();
                     onDelete(production);
                   }}
-                  className="h-8 w-8 p-0 text-slate-400 hover:text-red-400/80 opacity-0 group-hover:opacity-100 transition-all duration-200"
+                  className="h-8 w-8 p-0 text-slate-400 hover:text-red-400/80 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all duration-200"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
