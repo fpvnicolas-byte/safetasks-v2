@@ -1,5 +1,7 @@
 'use client';
 
+// Teste de commit - comentário adicionado para prática
+
 import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
