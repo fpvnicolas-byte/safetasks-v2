@@ -1,43 +1,38 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Film, Check, ArrowRight, Shield, Zap, Users, Building2 } from 'lucide-react';
 import { Footer } from '../../components/Footer';
-import { organizationsApi } from '../../lib/api';
+import { organizationsApi, authApi } from '../../lib/api';
 import { toast } from 'sonner';
 
 export default function PlansPage() {
     const router = useRouter();
     const [loading, setLoading] = useState<Record<string, boolean>>({});
-    const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-
-    // Verificar autenticação ao carregar a página
-    useEffect(() => {
-        const checkAuth = async () => {
-            try {
-                // Tentar fazer uma chamada que requer autenticação
-                await organizationsApi.getSettings();
-                setIsAuthenticated(true);
-            } catch (error) {
-                setIsAuthenticated(false);
-            }
-        };
-
-        checkAuth();
-    }, []);
 
     const handleSubscribe = async (plan: string) => {
-        // Se não estiver autenticado, redirecionar para registro
-        if (!isAuthenticated) {
-            router.push(`/register?plan=${plan}`);
-            return;
-        }
-
-        // Se estiver autenticado, continuar com checkout normal
         setLoading(prev => ({ ...prev, [plan]: true }));
+
         try {
+            // Primeiro verificar se está autenticado e obter dados do usuário
+            let userProfile;
+            try {
+                userProfile = await authApi.getCurrentUser();
+            } catch (error) {
+                // Não está autenticado - redirecionar para registro
+                router.push(`/register?plan=${plan}`);
+                return;
+            }
+
+            // Verificar se o usuário tem permissão para comprar planos (apenas admins)
+            if (userProfile.role !== 'admin') {
+                toast.error("Apenas administradores da organização podem alterar planos. Entre em contato com o administrador da sua organização.");
+                return;
+            }
+
+            // Usuário autenticado e é admin - prosseguir com checkout
             const successUrl = `${window.location.origin}/dashboard?subscription=success`;
             const cancelUrl = `${window.location.origin}/plans?subscription=cancelled`;
 
@@ -59,18 +54,6 @@ export default function PlansPage() {
             setLoading(prev => ({ ...prev, [plan]: false }));
         }
     };
-
-    // Renderizar loading enquanto verifica autenticação
-    if (isAuthenticated === null) {
-        return (
-            <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto mb-4"></div>
-                    <p className="text-slate-400">Verificando autenticação...</p>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="min-h-screen bg-slate-950 text-slate-50 font-sans selection:bg-emerald-500/30">
