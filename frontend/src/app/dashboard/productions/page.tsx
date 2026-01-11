@@ -9,6 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { productionsApi, servicesApi, usersApi, clientsApi } from '../../../lib/api';
 import { formatCurrency } from '../../../lib/utils';
 import { Button } from '../../../components/ui/button';
+import { LoadingButton } from '../../../components/ui/loading-button';
 import { Input } from '../../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { useSWRConfig } from 'swr';
@@ -55,6 +56,8 @@ export default function ProductionsPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [productionToDelete, setProductionToDelete] = useState<ProductionResponse | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Pagination state
   const [hasMore, setHasMore] = useState(false);
@@ -112,6 +115,7 @@ export default function ProductionsPage() {
 
   const confirmDeleteProduction = async () => {
     if (!productionToDelete) return;
+    setIsDeleting(true);
     try {
       await productionsApi.deleteProduction(productionToDelete.id);
       setProductions(productions.filter(p => p.id !== productionToDelete.id));
@@ -121,6 +125,7 @@ export default function ProductionsPage() {
       console.error("Erro ao excluir produção:", err);
       toast.error("Erro ao excluir produção");
     } finally {
+      setIsDeleting(false);
       setProductionToDelete(null);
     }
   };
@@ -134,6 +139,7 @@ export default function ProductionsPage() {
   const handleCreateProduction = async () => {
     if (!createForm.title.trim()) return;
 
+    setIsSubmitting(true);
     try {
       const payload: any = {
         title: createForm.title.trim(),
@@ -163,6 +169,8 @@ export default function ProductionsPage() {
     } catch (err: any) {
       console.error("Erro ao criar produção:", err);
       setError(err.response?.data?.detail || 'Erro ao criar produção');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -439,23 +447,25 @@ export default function ProductionsPage() {
                 onClick={() => setCreateModalOpen(false)}
                 variant="outline"
                 className="flex-1 border-slate-600 text-slate-300 hover:bg-slate-800"
+                disabled={isSubmitting}
               >
                 Cancelar
               </Button>
-              <Button
+              <LoadingButton
                 onClick={handleCreateProduction}
+                loading={isSubmitting}
                 disabled={!createForm.title.trim()}
                 className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
               >
                 Criar Produção
-              </Button>
+              </LoadingButton>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Delete Production Confirmation Dialog */}
-      <AlertDialog open={!!productionToDelete} onOpenChange={() => setProductionToDelete(null)}>
+      <AlertDialog open={!!productionToDelete} onOpenChange={() => !isDeleting && setProductionToDelete(null)}>
         <AlertDialogContent className="bg-slate-950/95 backdrop-blur-2xl border border-white/10">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-slate-50">
@@ -470,12 +480,13 @@ export default function ProductionsPage() {
             <AlertDialogCancel className="border-slate-600 text-slate-300 hover:bg-slate-800">
               Cancelar
             </AlertDialogCancel>
-            <AlertDialogAction
+            <LoadingButton
               onClick={confirmDeleteProduction}
+              loading={isDeleting}
               className="bg-red-600 hover:bg-red-700 text-white"
             >
               Excluir Produção
-            </AlertDialogAction>
+            </LoadingButton>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

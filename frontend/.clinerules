@@ -1,0 +1,26 @@
+# .clinerules
+
+## Tech Stack & Architecture
+- **Framework:** Next.js 14+ (App Router).
+- **Styling:** Tailwind CSS + Shadcn/UI.
+- **Backend:** Supabase (Auth, Database).
+- **Icons:** Lucide React.
+- **State Management:** React Hooks (useState, useTransition) for local UI states.
+
+## Project Structure
+- `/app`: Application routes and views.
+  - `(dashboard)`: Protected routes (clients, users, productions).
+  - `(auth)`: Login logic.
+- `/components/ui`: Atomic UI components (Buttons, Inputs, Dialogs).
+- `/lib`: Utility functions and Supabase clients.
+
+## Coding Standards & UX Rules
+1. **Async Safety:** ALL buttons triggering async actions (API calls, Server Actions) MUST have a visual Loading State.
+2. **Double-Click Prevention:** Buttons must be `disabled` immediately upon click until the action resolves.
+3. **Feedback:** Use Toast notifications for success/error feedback.
+4. **Strict Typing:** All props and functions must be typed (TypeScript).
+5. **Component Reusability:** Prefer creating wrapper components (like `LoadingButton`) over repeating logic.
+
+## Specific Implementation Guidelines
+- When modifying `AlertDialog`, ensure the "Confirm" action handles the loading state correctly (preventing the dialog from closing prematurely if needed).
+- Use `lucide-react` for spinners (`Loader2` icon).

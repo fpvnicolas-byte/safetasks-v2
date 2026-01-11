@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../compo
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../../../components/ui/alert-dialog';
 import { clientsApi } from '../../../lib/api';
 import { Button } from '../../../components/ui/button';
+import { LoadingButton } from '../../../components/ui/loading-button';
 import { Input } from '../../../components/ui/input';
 import { Badge } from '../../../components/ui/badge';
 import { CardSkeleton } from '../../../components/ui/card-skeleton';
@@ -43,6 +44,8 @@ export default function ClientsPage() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { mutate } = useSWRConfig();
 
   // Estado para formulários
@@ -72,6 +75,7 @@ export default function ClientsPage() {
   const handleCreateClient = async () => {
     if (!formData.full_name.trim()) return;
 
+    setIsSubmitting(true);
     try {
       const payload = {
         full_name: formData.full_name.trim(),
@@ -100,12 +104,15 @@ export default function ClientsPage() {
       } else {
         toast.error("Erro ao criar cliente");
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleEditClient = async () => {
     if (!selectedClient || !formData.full_name.trim()) return;
 
+    setIsSubmitting(true);
     try {
       const payload = {
         full_name: formData.full_name.trim(),
@@ -135,6 +142,8 @@ export default function ClientsPage() {
       } else {
         toast.error("Erro ao editar cliente");
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -148,6 +157,7 @@ export default function ClientsPage() {
   const confirmDeleteClient = async () => {
     if (!clientToDelete) return;
 
+    setIsDeleting(true);
     try {
       await clientsApi.deleteClient(clientToDelete.id);
       await mutate('/api/v1/clients');
@@ -158,6 +168,7 @@ export default function ClientsPage() {
       console.error("Erro ao excluir cliente:", err);
       toast.error("Erro ao excluir cliente");
     } finally {
+      setIsDeleting(false);
       setClientToDelete(null);
     }
   };
@@ -451,16 +462,18 @@ export default function ClientsPage() {
                 }}
                 variant="outline"
                 className="flex-1 border-slate-600 text-slate-300 hover:bg-slate-800"
+                disabled={isSubmitting}
               >
                 Cancelar
               </Button>
-              <Button
+              <LoadingButton
                 onClick={handleCreateClient}
+                loading={isSubmitting}
                 disabled={!formData.full_name.trim()}
                 className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
               >
                 Criar Cliente
-              </Button>
+              </LoadingButton>
             </div>
           </div>
         </DialogContent>
@@ -552,23 +565,25 @@ export default function ClientsPage() {
                 }}
                 variant="outline"
                 className="flex-1 border-slate-600 text-slate-300 hover:bg-slate-800"
+                disabled={isSubmitting}
               >
                 Cancelar
               </Button>
-              <Button
+              <LoadingButton
                 onClick={handleEditClient}
+                loading={isSubmitting}
                 disabled={!formData.full_name.trim()}
                 className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
               >
                 Salvar Alterações
-              </Button>
+              </LoadingButton>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!clientToDelete} onOpenChange={() => setClientToDelete(null)}>
+      <AlertDialog open={!!clientToDelete} onOpenChange={() => !isDeleting && setClientToDelete(null)}>
         <AlertDialogContent className="bg-slate-950/95 backdrop-blur-2xl border border-white/10">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-slate-50 text-xl font-semibold">
@@ -584,12 +599,13 @@ export default function ClientsPage() {
             <AlertDialogCancel className="border-slate-600 text-slate-300 hover:bg-slate-800">
               Cancelar
             </AlertDialogCancel>
-            <AlertDialogAction
+            <LoadingButton
               onClick={confirmDeleteClient}
+              loading={isDeleting}
               className="bg-red-600 hover:bg-red-700 text-white"
             >
               Confirmar Exclusão
-            </AlertDialogAction>
+            </LoadingButton>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

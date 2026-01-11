@@ -17,6 +17,7 @@ import {
 } from '../../../components/ui/alert-dialog';
 import { usersApi } from '../../../lib/api';
 import { Button } from '../../../components/ui/button';
+import { LoadingButton } from '../../../components/ui/loading-button';
 import { Input } from '../../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { Badge } from '../../../components/ui/badge';
@@ -52,6 +53,9 @@ export default function UsersPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [actionType, setActionType] = useState<'toggle' | 'delete' | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isToggling, setIsToggling] = useState(false);
   const { mutate } = useSWRConfig();
 
   // Estado para formulários
@@ -80,6 +84,7 @@ export default function UsersPage() {
   const handleCreateUser = async () => {
     if (!formData.full_name.trim() || !formData.email.trim() || !formData.password.trim()) return;
 
+    setIsSubmitting(true);
     try {
       await usersApi.inviteCrewMember({
         full_name: formData.full_name.trim(),
@@ -110,6 +115,8 @@ export default function UsersPage() {
       else {
         toast.error("Erro ao criar usuário");
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -124,6 +131,7 @@ export default function UsersPage() {
   const confirmToggleUserStatus = async () => {
     if (!userToDelete) return;
 
+    setIsToggling(true);
     try {
       await usersApi.updateUserStatus(userToDelete.id, {
         is_active: !userToDelete.is_active
@@ -140,6 +148,7 @@ export default function UsersPage() {
       toast.error("Erro ao alterar status do usuário");
     }
     finally {
+      setIsToggling(false);
       setUserToDelete(null);
       setActionType(null);
     }
@@ -156,6 +165,7 @@ export default function UsersPage() {
   const confirmDeleteUser = async () => {
     if (!userToDelete) return;
 
+    setIsDeleting(true);
     try {
       await usersApi.deleteUser(userToDelete.id);
 
@@ -170,6 +180,7 @@ export default function UsersPage() {
       toast.error("Erro ao excluir usuário");
     }
     finally {
+      setIsDeleting(false);
       setUserToDelete(null);
       setActionType(null);
     }
@@ -479,16 +490,18 @@ export default function UsersPage() {
                 }}
                 variant="outline"
                 className="flex-1 border-slate-600 text-slate-300 hover:bg-slate-800"
+                disabled={isSubmitting}
               >
                 Cancelar
               </Button>
-              <Button
+              <LoadingButton
                 onClick={handleCreateUser}
+                loading={isSubmitting}
                 disabled={!formData.full_name.trim() || !formData.email.trim() || !formData.password.trim()}
                 className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
               >
                 Convidar Usuário
-              </Button>
+              </LoadingButton>
             </div>
           </div>
         </DialogContent>
@@ -584,8 +597,10 @@ export default function UsersPage() {
 
       {/* Delete/Toggle Status Confirmation Dialog */}
       <AlertDialog open={!!userToDelete} onOpenChange={() => {
-        setUserToDelete(null);
-        setActionType(null);
+        if (!isToggling && !isDeleting) {
+          setUserToDelete(null);
+          setActionType(null);
+        }
       }}>
         <AlertDialogContent className="bg-slate-950/95 backdrop-blur-2xl border border-white/10">
           <AlertDialogHeader>
@@ -614,15 +629,23 @@ export default function UsersPage() {
             <AlertDialogCancel className="border-slate-600 text-slate-300 hover:bg-slate-800">
               Cancelar
             </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={actionType === 'toggle' ? confirmToggleUserStatus : confirmDeleteUser}
-              className="bg-red-600 hover:bg-red-700 text-white"
-            >
-              {actionType === 'toggle'
-                ? (userToDelete?.is_active ? 'Desativar' : 'Ativar')
-                : 'Confirmar Exclusão'
-              }
-            </AlertDialogAction>
+            {actionType === 'toggle' ? (
+              <LoadingButton
+                onClick={confirmToggleUserStatus}
+                loading={isToggling}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                {userToDelete?.is_active ? 'Desativar' : 'Ativar'}
+              </LoadingButton>
+            ) : (
+              <LoadingButton
+                onClick={confirmDeleteUser}
+                loading={isDeleting}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                Confirmar Exclusão
+              </LoadingButton>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

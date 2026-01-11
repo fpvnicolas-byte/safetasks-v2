@@ -3,6 +3,7 @@
 
 import { Save, X } from 'lucide-react';
 import { Button } from '../../ui/button';
+import { LoadingButton } from '../../ui/loading-button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs';
 import { GeneralTab } from './tabs/GeneralTab';
@@ -108,6 +109,7 @@ export function ProductionEditSheet({
     const [localCrew, setLocalCrew] = useState<ProductionCrewResponse[]>([]);
     const [localExpenses, setLocalExpenses] = useState<ExpenseResponse[]>([]);
     const [isEditing, setIsEditing] = useState<boolean>(false);
+    const [isSaving, setIsSaving] = useState(false);
 
     const [selectedService, setSelectedService] = useState<ServiceResponse | null>(null);
     const [newItemQuantity, setNewItemQuantity] = useState<number>(1);
@@ -347,6 +349,7 @@ export function ProductionEditSheet({
     const handleSave = async () => {
         if (!production) return;
 
+        setIsSaving(true);
         const payload = {
             ...editForm,
             // 🔒 CONVERTER STRINGS VAZIAS EM NULL PARA DATAS
@@ -428,6 +431,8 @@ export function ProductionEditSheet({
             toast.error('Failed to save production', {
                 description: errorMessage,
             });
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -462,17 +467,19 @@ export function ProductionEditSheet({
                             {production?.title}
                         </SheetTitle>
                         <div className="flex items-center gap-4">
-                            <Button
+                            <LoadingButton
                                 onClick={handleSave}
-                                className="bg-emerald-600 hover:bg-emerald-700"
+                                loading={isSaving}
                                 disabled={!isEditing}
+                                className="bg-emerald-600 hover:bg-emerald-700"
                             >
                                 <Save className="h-4 w-4 mr-2" />
                                 Salvar
-                            </Button>
+                            </LoadingButton>
                             <Button
                                 variant="outline"
                                 onClick={handleCancel}
+                                disabled={isSaving}
                                 className="border-slate-600 text-slate-300 hover:bg-slate-800"
                             >
                                 Cancelar

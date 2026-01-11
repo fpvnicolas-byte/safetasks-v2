@@ -15,6 +15,7 @@ import {
 } from '../../../components/ui/alert-dialog';
 import { servicesApi } from '../../../lib/api';
 import { Button } from '../../../components/ui/button';
+import { LoadingButton } from '../../../components/ui/loading-button';
 import { Input } from '../../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { Textarea } from '../../../components/ui/textarea';
@@ -50,6 +51,8 @@ export default function ServicesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [serviceToDelete, setServiceToDelete] = useState<Service | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { mutate } = useSWRConfig();
 
   const [formData, setFormData] = useState<ServiceFormData>({
@@ -83,6 +86,7 @@ export default function ServicesPage() {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       const payload = {
         name: formData.name.trim(),
@@ -98,11 +102,14 @@ export default function ServicesPage() {
       toast.success("Serviço criado com sucesso!");
     } catch (err: any) {
       toast.error("Erro ao criar serviço");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const confirmDeleteService = async () => {
     if (!serviceToDelete) return;
+    setIsDeleting(true);
     try {
       await servicesApi.deleteService(serviceToDelete.id);
       setServices(services.filter(s => s.id !== serviceToDelete.id));
@@ -115,6 +122,7 @@ export default function ServicesPage() {
         toast.error("Erro ao excluir serviço");
       }
     } finally {
+      setIsDeleting(false);
       setServiceToDelete(null);
     }
   };
@@ -292,23 +300,25 @@ export default function ServicesPage() {
                 }}
                 variant="outline"
                 className="flex-1 border-slate-600 text-slate-300 hover:bg-slate-800"
+                disabled={isSubmitting}
               >
                 Cancelar
               </Button>
-              <Button
+              <LoadingButton
                 onClick={handleCreateService}
+                loading={isSubmitting}
                 disabled={!formData.name.trim() || !formData.default_price.trim()}
                 className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
               >
                 Criar Serviço
-              </Button>
+              </LoadingButton>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Delete - Corrigido para AlertDialogContent */}
-      <AlertDialog open={!!serviceToDelete} onOpenChange={() => setServiceToDelete(null)}>
+      <AlertDialog open={!!serviceToDelete} onOpenChange={() => !isDeleting && setServiceToDelete(null)}>
         <AlertDialogContent className="bg-slate-900 border-white/10 text-slate-50 rounded-3xl backdrop-blur-xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-xl font-bold">Excluir Serviço?</AlertDialogTitle>
@@ -321,12 +331,13 @@ export default function ServicesPage() {
             <AlertDialogCancel className="bg-white/5 border-white/10 text-slate-300 hover:bg-white/10 hover:text-white rounded-xl">
               Manter
             </AlertDialogCancel>
-            <AlertDialogAction
+            <LoadingButton
               onClick={confirmDeleteService}
+              loading={isDeleting}
               className="bg-red-600 hover:bg-red-500 text-white font-semibold rounded-xl"
             >
               Excluir Permanentemente
-            </AlertDialogAction>
+            </LoadingButton>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
