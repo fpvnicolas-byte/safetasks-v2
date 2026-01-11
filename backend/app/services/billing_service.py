@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Set
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
@@ -11,6 +11,10 @@ from app.models.client import Client
 from app.core.billing_config import SubscriptionPlan, SubscriptionStatus, PLAN_LIMITS
 
 logger = logging.getLogger("app.services.billing_service")
+
+# In-memory set for idempotency (use Redis in production for distributed systems)
+_processed_sessions: Set[str] = set()
+MAX_PROCESSED_SESSIONS = 10000  # Prevent memory overflow in long-running processes
 
 class BillingService:
     @staticmethod
@@ -78,26 +82,65 @@ class BillingService:
 
     @staticmethod
     async def handle_stripe_webhook_event(event: stripe.Event, db: AsyncSession):
+        """
+        Handle Stripe webhook events with security improvements:
+        - Idempotency checking
+        - Payment status validation
+        - Proper error handling
+        """
         logger.info(f"🎯 Handling Stripe event: {event.type}")
-        logger.info(f"Event ID: {getattr(event, 'id', 'unknown')}")
+        event_id = getattr(event, 'id', 'unknown')
+        logger.info(f"Event ID: {event_id}")
+
+        # Check for duplicate event processing (idempotency)
+        if event_id in _processed_sessions:
+            logger.info(f"Event {event_id} already processed, skipping")
+            return
 
         event_data = event.data.object
         logger.info(f"Event data type: {type(event_data)}")
 
         if event.type == "checkout.session.completed":
             session = event_data
-            organization_id = int(session.client_reference_id)
+            session_id = session.id
+            
+            # Idempotency check for session
+            if session_id in _processed_sessions:
+                logger.info(f"Session {session_id} already processed, skipping")
+                return
+            
+            # Clean up old processed sessions to prevent memory overflow
+            if len(_processed_sessions) > MAX_PROCESSED_SESSIONS:
+                _processed_sessions.clear()
+            
+            organization_id = int(session.client_reference_id) if session.client_reference_id else None
 
             logger.info(f"Processing checkout.session.completed for org {organization_id}")
-            logger.info(f"Stripe session ID: {session.id}")
+            logger.info(f"Stripe session ID: {session_id}")
             logger.info(f"Stripe customer ID: {session.customer}")
             logger.info(f"Stripe subscription ID: {getattr(session, 'subscription', 'None')}")
+
+            # Security: Validate payment_status
+            payment_status = getattr(session, 'payment_status', None)
+            logger.info(f"Payment status: {payment_status}")
+            
+            if payment_status != "paid":
+                logger.warning(f"Payment not completed for session {session_id}. Status: {payment_status}")
+                # Don't activate subscription if payment isn't confirmed
+                _processed_sessions.add(event_id)
+                return
+
+            if not organization_id:
+                logger.error(f"No organization_id found in checkout session {session_id}")
+                _processed_sessions.add(event_id)
+                return
 
             result = await db.execute(select(Organization).where(Organization.id == organization_id))
             organization = result.scalar_one_or_none()
 
             if not organization:
-                logger.error(f"Organization {organization_id} not found for checkout session {session.id}")
+                logger.error(f"Organization {organization_id} not found for checkout session {session_id}")
+                _processed_sessions.add(event_id)
                 return
 
             logger.info(f"Current subscription_ends_at before update: {organization.subscription_ends_at}")
@@ -106,7 +149,7 @@ class BillingService:
             # Update organization with billing_id and initial subscription status
             organization.billing_id = session.customer
             organization.subscription_plan = session.metadata.get("subscription_plan", SubscriptionPlan.FREE)
-            organization.subscription_status = SubscriptionStatus.ACTIVE # Assuming payment was successful
+            organization.subscription_status = SubscriptionStatus.ACTIVE
             
             # Fetch subscription details from Stripe to get current_period_end
             try:
@@ -118,20 +161,21 @@ class BillingService:
                     logger.info(f"Subscription ends at: {organization.subscription_ends_at}")
                 else:
                     logger.warning("No current_period_end found in Stripe subscription, using fallback")
-                    # Fallback: definir uma data padrão (30 dias)
                     organization.subscription_ends_at = datetime.utcnow() + timedelta(days=30)
 
             except Exception as e:
                 logger.error(f"Error retrieving Stripe subscription details: {e}")
-                # Fallback: definir uma data padrão em caso de erro
                 organization.subscription_ends_at = datetime.utcnow() + timedelta(days=30)
             
-            # If it was in trial, reset trial_ends_at
             organization.trial_ends_at = None
 
             db.add(organization)
             await db.commit()
             await db.refresh(organization)
+            
+            # Mark event and session as processed
+            _processed_sessions.add(event_id)
+            _processed_sessions.add(session_id)
             logger.info(f"Organization {organization_id} subscription updated to {organization.subscription_plan}")
 
         elif event.type == "customer.subscription.updated":
@@ -170,5 +214,25 @@ class BillingService:
             await db.commit()
             await db.refresh(organization)
             logger.info(f"Organization {organization_id} subscription status set to CANCELED.")
-
-        # Add other event types as needed, e.g., invoice.payment_failed, customer.subscription.trial_will_end, etc.
+            
+        elif event.type == "invoice.payment_failed":
+            invoice = event_data
+            customer_id = invoice.get("customer")
+            
+            logger.warning(f"Payment failed for customer {customer_id}")
+            logger.warning(f"Invoice ID: {invoice.id}")
+            logger.warning(f"Failure message: {invoice.get("last_finalization_error", {}).get("message", "Unknown error")}")
+            
+            # Find organization by billing_id and downgrade to FREE
+            result = await db.execute(select(Organization).where(Organization.billing_id == customer_id))
+            organization = result.scalar_one_or_none()
+            
+            if organization:
+                logger.warning(f"Downgrading organization {organization.id} due to payment failure")
+                organization.subscription_status = SubscriptionStatus.PAST_DUE
+                db.add(organization)
+                await db.commit()
+                await db.refresh(organization)
+                logger.info(f"Organization {organization.id} subscription status set to PAST_DUE")
+            else:
+                logger.warning(f"No organization found for billing_id {customer_id}")
